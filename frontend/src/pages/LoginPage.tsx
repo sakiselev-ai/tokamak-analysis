@@ -7,11 +7,39 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const { login, register, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
+  const validationErrors: Record<string, string> = {};
+  if (touched.email && !email.trim()) {
+    validationErrors.email = 'Email обязателен';
+  } else if (touched.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    validationErrors.email = 'Некорректный формат email';
+  }
+  if (touched.password && password.length < 8) {
+    validationErrors.password = 'Минимум 8 символов';
+  }
+  if (isRegister && touched.fullName && !fullName.trim()) {
+    validationErrors.fullName = 'Имя обязательно';
+  }
+
+  const isFormValid =
+    email.trim() &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+    password.length >= 8 &&
+    (!isRegister || fullName.trim());
+
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ email: true, password: true, fullName: true });
+    if (!isFormValid) return;
+
     if (isRegister) {
       await register(email, password, fullName);
     } else {
@@ -23,112 +51,98 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-      }}
-    >
-      <div
-        style={{
-          background: '#fff',
-          padding: 40,
-          borderRadius: 12,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          width: 400,
-        }}
-      >
-        <h1 style={{ textAlign: 'center', marginBottom: 8, color: '#1a1a2e' }}>Tokamak Analysis</h1>
-        <p style={{ textAlign: 'center', color: '#666', marginBottom: 24, fontSize: 14 }}>
+    <div className="login-wrapper">
+      <div className="login-card">
+        <h1 className="login-title">{'\u269B'} Tokamak Analysis</h1>
+        <p className="login-subtitle">
           НИЯУ МИФИ — ИИ-система анализа данных токамаков
         </p>
 
         <form onSubmit={handleSubmit}>
           {isRegister && (
-            <input
-              type="text"
-              placeholder="Полное имя"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                marginBottom: 12,
-                border: '1px solid #ddd',
-                borderRadius: 4,
-                fontSize: 14,
-                boxSizing: 'border-box',
-              }}
-            />
+            <div className="form-group">
+              <label>Полное имя</label>
+              <input
+                type="text"
+                className={`form-input${validationErrors.fullName ? ' is-error' : ''}`}
+                placeholder="Иванов Иван Иванович"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                onBlur={() => handleBlur('fullName')}
+              />
+              {validationErrors.fullName && (
+                <div className="form-error">{validationErrors.fullName}</div>
+              )}
+            </div>
           )}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              marginBottom: 12,
-              border: '1px solid #ddd',
-              borderRadius: 4,
-              fontSize: 14,
-              boxSizing: 'border-box',
-            }}
-          />
-          <input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              marginBottom: 16,
-              border: '1px solid #ddd',
-              borderRadius: 4,
-              fontSize: 14,
-              boxSizing: 'border-box',
-            }}
-          />
 
-          {error && <p style={{ color: '#e74c3c', fontSize: 14, marginBottom: 12 }}>{error}</p>}
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              className={`form-input${validationErrors.email ? ' is-error' : ''}`}
+              placeholder="user@mephi.ru"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => handleBlur('email')}
+            />
+            {validationErrors.email && (
+              <div className="form-error">{validationErrors.email}</div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label>Пароль</label>
+            <div className="input-group">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className={`form-input${validationErrors.password ? ' is-error' : ''}`}
+                placeholder="Минимум 8 символов"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => handleBlur('password')}
+              />
+              <button
+                type="button"
+                className="input-group-append"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+              >
+                {showPassword ? '\u25C9' : '\u25CE'}
+              </button>
+            </div>
+            {validationErrors.password && (
+              <div className="form-error">{validationErrors.password}</div>
+            )}
+            {!validationErrors.password && touched.password && password.length >= 8 && (
+              <div className="form-hint text-success">{'\u2713'} Пароль достаточно длинный</div>
+            )}
+          </div>
+
+          {error && (
+            <div className="mb-md text-danger text-sm">{error}</div>
+          )}
 
           <button
             type="submit"
+            className="btn btn-primary btn-lg w-full mb-md"
             disabled={isLoading}
-            style={{
-              width: '100%',
-              padding: '10px',
-              background: '#1a1a2e',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              fontSize: 16,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              marginBottom: 12,
-            }}
           >
-            {isLoading ? 'Загрузка...' : isRegister ? 'Зарегистрироваться' : 'Войти'}
+            {isLoading && <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />}
+            {isLoading
+              ? 'Загрузка...'
+              : isRegister
+              ? 'Зарегистрироваться'
+              : 'Войти'}
           </button>
         </form>
 
         <button
-          onClick={() => setIsRegister(!isRegister)}
-          style={{
-            width: '100%',
-            background: 'none',
-            border: 'none',
-            color: '#0f3460',
-            cursor: 'pointer',
-            fontSize: 14,
+          className="btn btn-ghost w-full text-sm"
+          onClick={() => {
+            setIsRegister(!isRegister);
+            setTouched({});
           }}
         >
           {isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}

@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export default function Layout() {
@@ -11,52 +11,79 @@ export default function Layout() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header
-        style={{
-          background: '#1a1a2e',
-          color: '#fff',
-          padding: '12px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link to="/" style={{ color: '#fff', textDecoration: 'none', fontSize: 18, fontWeight: 700 }}>
+    <div className="app-layout">
+
+      <header className="app-header">
+        <div className="flex items-center gap-lg">
+          <Link to="/" className="app-logo">
+            <span>{'\u269B'}</span>
             Tokamak Analysis
           </Link>
-          <nav style={{ display: 'flex', gap: 16 }}>
-            <Link to="/" style={{ color: '#ccc', textDecoration: 'none' }}>
-              Dashboard
-            </Link>
-            <Link to="/training" style={{ color: '#ccc', textDecoration: 'none' }}>
-              Training
-            </Link>
+          <nav className="app-nav">
+            <NavLink to="/" end>
+              <span>{'\u25A3'}</span> Dashboard
+            </NavLink>
+            <NavLink to="/training">
+              <span>{'\u2699'}</span> Training
+            </NavLink>
           </nav>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ color: '#aaa', fontSize: 14 }}>
+        <div className="app-header-right">
+          <span className="app-user-info">
             {user?.full_name} ({user?.role})
           </span>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'transparent',
-              border: '1px solid #666',
-              color: '#ccc',
-              padding: '4px 12px',
-              borderRadius: 4,
-              cursor: 'pointer',
-            }}
-          >
+          <button className="btn btn-outline btn-sm" onClick={handleLogout}
+            style={{ color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.25)' }}>
             Выйти
           </button>
         </div>
       </header>
-      <main style={{ flex: 1, padding: 24, background: '#f5f5f5' }}>
-        <Outlet />
-      </main>
+
+      <div className="app-body">
+        <aside className="app-sidebar">
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Навигация</div>
+            <nav className="sidebar-nav">
+              <NavLink to="/" end>
+                <span className="sidebar-icon">{'\u25A3'}</span>
+                Dashboard
+              </NavLink>
+              <NavLink to="/training">
+                <span className="sidebar-icon">{'\u2699'}</span>
+                Обучение
+              </NavLink>
+            </nav>
+          </div>
+
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Анализ</div>
+            <nav className="sidebar-nav">
+              <NavLink to="/" end>
+                <span className="sidebar-icon">{'\u26A1'}</span>
+                Эксперименты
+              </NavLink>
+            </nav>
+          </div>
+
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Аккаунт</div>
+            <nav className="sidebar-nav">
+              <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }}>
+                <span className="sidebar-icon">{'\u2192'}</span>
+                Выйти
+              </a>
+            </nav>
+          </div>
+        </aside>
+
+        <main className="app-main">
+          <Outlet />
+        </main>
+      </div>
+
+      <footer className="app-footer">
+        &copy; НИЯУ МИФИ 2026 — Платформа анализа данных токамаков
+      </footer>
     </div>
   );
 }

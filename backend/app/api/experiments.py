@@ -96,6 +96,7 @@ async def list_experiments(
 ):
     query = (
         select(Experiment)
+        .options(selectinload(Experiment.timeseries))
         .where(Experiment.user_id == current_user.id)
         .order_by(Experiment.loaded_at.desc())
         .offset(skip)

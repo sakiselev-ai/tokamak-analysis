@@ -20,8 +20,16 @@ class RandomForestModel(ModelInterface):
     CPU inference ≤ 5ms. No GPU required.
     """
 
+    RF_PARAMS = {
+        "n_estimators", "max_depth", "min_samples_split", "min_samples_leaf",
+        "class_weight", "max_features", "random_state", "n_jobs",
+        "criterion", "min_weight_fraction_leaf", "max_leaf_nodes",
+        "min_impurity_decrease", "bootstrap", "oob_score", "verbose",
+        "warm_start", "ccp_alpha", "max_samples",
+    }
+
     def __init__(self, hyperparams: dict | None = None):
-        self.hyperparams = hyperparams or {
+        defaults = {
             "n_estimators": 200,
             "max_depth": 20,
             "min_samples_split": 5,
@@ -31,6 +39,11 @@ class RandomForestModel(ModelInterface):
             "random_state": 42,
             "n_jobs": -1,
         }
+        if hyperparams:
+            # Only keep params that RF actually accepts
+            filtered = {k: v for k, v in hyperparams.items() if k in self.RF_PARAMS}
+            defaults.update(filtered)
+        self.hyperparams = defaults
         self.model = RandomForestClassifier(**self.hyperparams)
         self.metrics: dict = {}
         self.trained_at: str | None = None

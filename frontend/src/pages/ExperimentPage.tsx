@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import TimeSeriesChart from '../components/TimeSeriesChart';
@@ -11,23 +11,53 @@ export default function ExperimentPage() {
   const [timeseries, setTimeseries] = useState<TimeSeries[]>([]);
   const [selectedParams, setSelectedParams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!id) return;
     Promise.all([
       api.get(`/experiments/${id}`),
       api.get(`/experiments/${id}/timeseries`),
-    ]).then(([expRes, tsRes]) => {
-      setExperiment(expRes.data);
-      setTimeseries(tsRes.data);
-      // Select first 4 signals by default
-      setSelectedParams(tsRes.data.slice(0, 4).map((ts: TimeSeries) => ts.parameter_name));
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    ])
+      .then(([expRes, tsRes]) => {
+        setExperiment(expRes.data);
+        setTimeseries(tsRes.data);
+        setSelectedParams(
+          tsRes.data.slice(0, 4).map((ts: TimeSeries) => ts.parameter_name)
+        );
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p>Загрузка...</p>;
-  if (!experiment) return <p>Эксперимент не найден</p>;
+  const filteredSignals = useMemo(() => {
+    if (!search.trim()) return timeseries;
+    const q = search.toLowerCase();
+    return timeseries.filter(
+      (ts) =>
+        ts.parameter_name.toLowerCase().includes(q) ||
+        (ts.units && ts.units.toLowerCase().includes(q)) ||
+        (ts.description && ts.description.toLowerCase().includes(q))
+    );
+  }, [timeseries, search]);
+
+  if (loading) {
+    return (
+      <div className="loading-overlay">
+        <span className="spinner spinner-lg" />
+        Загрузка эксперимента...
+      </div>
+    );
+  }
+
+  if (!experiment) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">{'\u2717'}</div>
+        <div className="empty-state-text">Эксперимент не найден</div>
+      </div>
+    );
+  }
 
   const toggleParam = (name: string) => {
     setSelectedParams((prev) =>
@@ -35,82 +65,115 @@ export default function ExperimentPage() {
     );
   };
 
+  const selectAll = () => {
+    setSelectedParams(filteredSignals.map((ts) => ts.parameter_name));
+  };
+
+  const deselectAll = () => {
+    setSelectedParams([]);
+  };
+
+  const statusCls =
+    experiment.status === 'preprocessed'
+      ? 'badge-success'
+      : experiment.status === 'error'
+      ? 'badge-danger'
+      : 'badge-warning';
+
   return (
     <div>
-      <h2 style={{ marginBottom: 8 }}>
-        Выстрел #{experiment.shot_id}
-        <span style={{ fontSize: 14, fontWeight: 400, color: '#666', marginLeft: 12 }}>
-          {experiment.source.toUpperCase()} | {experiment.status}
-        </span>
-      </h2>
+      <div className="flex-between mb-lg flex-wrap gap-sm">
+        <div>
+          <h2>
+            Выстрел #{experiment.shot_id}
+          </h2>
+          <div className="flex items-center gap-sm mt-xs">
+            <span className="badge badge-info">{experiment.source.toUpperCase()}</span>
+            <span className={`badge ${statusCls}`}>{experiment.status}</span>
+            <span className="text-sm text-muted">
+              {new Date(experiment.loaded_at).toLocaleString('ru')}
+            </span>
+          </div>
+        </div>
+      </div>
 
-      <div style={{ display: 'flex', gap: 20, marginTop: 16 }}>
-        {/* Signal selector */}
-        <div
-          style={{
-            width: 250,
-            background: '#fff',
-            padding: 16,
-            borderRadius: 8,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            maxHeight: 500,
-            overflowY: 'auto',
-          }}
-        >
-          <h4 style={{ margin: '0 0 8px' }}>Параметры ({timeseries.length})</h4>
-          {timeseries.map((ts) => (
-            <label
-              key={ts.parameter_name}
-              style={{ display: 'block', padding: '4px 0', fontSize: 13, cursor: 'pointer' }}
-            >
+      <div className="experiment-layout">
+        {/* Signal Selector Sidebar */}
+        <div className="signal-sidebar">
+          <div className="card">
+            <h4 className="mb-sm">
+              Параметры
+              <span className="text-muted text-sm" style={{ fontWeight: 400, marginLeft: 6 }}>
+                ({timeseries.length})
+              </span>
+            </h4>
+
+            <div className="signal-search">
               <input
-                type="checkbox"
-                checked={selectedParams.includes(ts.parameter_name)}
-                onChange={() => toggleParam(ts.parameter_name)}
-                style={{ marginRight: 6 }}
+                type="text"
+                className="form-input"
+                placeholder="Поиск сигналов..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
-              {ts.parameter_name}
-              {ts.units && <span style={{ color: '#999' }}> ({ts.units})</span>}
-            </label>
-          ))}
+            </div>
+
+            <div className="flex gap-sm mb-sm">
+              <button className="btn btn-ghost btn-sm" onClick={selectAll}>
+                Все
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={deselectAll}>
+                Сбросить
+              </button>
+              <span className="text-xs text-muted" style={{ marginLeft: 'auto', alignSelf: 'center' }}>
+                {selectedParams.length} выбрано
+              </span>
+            </div>
+
+            <div className="signal-list">
+              {filteredSignals.length === 0 ? (
+                <div className="text-sm text-muted p-sm">Сигналы не найдены</div>
+              ) : (
+                filteredSignals.map((ts) => (
+                  <label key={ts.parameter_name}>
+                    <input
+                      type="checkbox"
+                      checked={selectedParams.includes(ts.parameter_name)}
+                      onChange={() => toggleParam(ts.parameter_name)}
+                    />
+                    <span className="truncate">{ts.parameter_name}</span>
+                    {ts.units && <span className="signal-units">{ts.units}</span>}
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Chart */}
-        <div style={{ flex: 1 }}>
-          <TimeSeriesChart
-            data={timeseries}
-            selectedParams={selectedParams}
-            title={`Shot #${experiment.shot_id} — Временные ряды`}
-          />
+        {/* Main content */}
+        <div className="experiment-main">
+          <div className="card mb-md">
+            <TimeSeriesChart
+              data={timeseries}
+              selectedParams={selectedParams}
+              title={`Shot #${experiment.shot_id} \u2014 Временные ряды`}
+            />
+          </div>
+
           <PredictionPanel experimentId={experiment.id} />
 
-          {/* Export */}
-          <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+          <div className="export-actions">
             <a
               href={`/api/v1/experiments/${experiment.id}/export?format=csv`}
-              style={{
-                padding: '8px 16px',
-                background: '#3498db',
-                color: '#fff',
-                textDecoration: 'none',
-                borderRadius: 4,
-                fontSize: 14,
-              }}
+              style={{ background: '#3498db' }}
             >
-              Экспорт CSV
+              {'\u21E9'} Экспорт CSV
             </a>
             <a
               href={`/api/v1/experiments/${experiment.id}/export?format=json`}
-              style={{
-                padding: '8px 16px',
-                background: '#9b59b6',
-                color: '#fff',
-                textDecoration: 'none',
-                borderRadius: 4,
-                fontSize: 14,
-              }}
+              style={{ background: '#9b59b6' }}
             >
-              Экспорт JSON
+              {'\u21E9'} Экспорт JSON
             </a>
           </div>
         </div>

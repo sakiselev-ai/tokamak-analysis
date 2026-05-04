@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 import os
-import tempfile
 import time
 
 import numpy as np
 import structlog
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
-from service.data.preprocessing import prepare_features
+from service.metrics import CONTENT_TYPE_LATEST, ML_INFERENCE_DURATION, ML_TRAINING_DURATION, generate_latest
+
+from service.data.dataset import get_sample_dataset
+from service.data.fair_mast_loader import load_shots
+from service.data.metrics import compute_metrics, format_confusion_matrix
+from service.data.preprocessing import prepare_batch, prepare_features
 from service.training.trainer import create_model, load_model
 
 logger = structlog.get_logger()
@@ -38,6 +43,11 @@ class TrainRequest(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "healthy", "service": "ml"}
+
+
+@app.get("/metrics")
+async def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/api/v1/predict/classify")
@@ -113,38 +123,80 @@ async def train(request: TrainRequest):
 
         model = create_model(request.model_type, request.hyperparameters or None)
 
-        # For now, generate synthetic data for testing
-        # In production, this would load from FAIR-MAST via shot_ids
-        n_samples = 100
         seq_len = request.hyperparameters.get("sequence_length", 200)
         n_features = request.hyperparameters.get("input_size", 39)
 
-        X = np.random.randn(n_samples, seq_len, n_features).astype(np.float32)
-        y = np.random.randint(0, 2, n_samples).astype(np.float32)
+        if request.shot_ids:
+            # Load real data from FAIR-MAST
+            shots_data = load_shots(request.shot_ids)
+            if not shots_data:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No valid shots could be loaded from the provided shot_ids",
+                )
+            X = prepare_batch(
+                [{"signals": s} for s in shots_data],
+                sequence_length=seq_len,
+            )
+            # Derive labels: use last-column energy as a proxy for disruption
+            energy = np.mean(X ** 2, axis=(1, 2))
+            y = (energy > np.median(energy)).astype(np.float32)
 
-        # For RF, flatten features
-        if request.model_type == "random_forest":
-            X_flat = X.reshape(n_samples, -1)
-            split = int(0.8 * n_samples)
-            metrics = model.fit(X_flat[:split], y[:split], X_flat[split:], y[split:])
+            from service.data.dataset import build_dataset
+            dataset = build_dataset(X, y)
         else:
-            split = int(0.8 * n_samples)
-            metrics = model.fit(X[:split], y[:split], X[split:], y[split:])
+            # Use synthetic sample data for testing / development
+            dataset = get_sample_dataset(
+                n_samples=200,
+                seq_len=seq_len,
+                n_features=n_features,
+                task=request.task,
+            )
 
-        # Save model
-        save_dir = tempfile.mkdtemp()
+        # Train the model
+        if request.model_type == "random_forest":
+            X_tr, y_tr = dataset.flat_train()
+            X_v, y_v = dataset.flat_val()
+            X_te, y_te = dataset.flat_test()
+        else:
+            X_tr, y_tr = dataset.X_train, dataset.y_train
+            X_v, y_v = dataset.X_val, dataset.y_val
+            X_te, y_te = dataset.X_test, dataset.y_test
+
+        train_metrics = model.fit(X_tr, y_tr, X_v, y_v)
+
+        # Compute proper test metrics
+        y_pred = model.predict(X_te)
+        y_proba = model.predict_proba(X_te)
+        test_metrics = compute_metrics(y_te, y_pred, y_proba)
+        cm = format_confusion_matrix(y_te, y_pred)
+
+        # Save model to persistent directory
+        save_dir = "/tmp/tokamak_models"
+        os.makedirs(save_dir, exist_ok=True)
         ext = ".joblib" if request.model_type == "random_forest" else ".pt"
-        save_path = os.path.join(save_dir, f"{request.model_type}_{request.task}{ext}")
+        run_tag = f"_run{request.run_id}" if request.run_id else ""
+        save_path = os.path.join(
+            save_dir, f"{request.model_type}_{request.task}{run_tag}{ext}"
+        )
         model.save(save_path)
 
-        logger.info("training_completed", model_type=request.model_type, metrics=metrics)
+        logger.info(
+            "training_completed",
+            model_type=request.model_type,
+            test_metrics=test_metrics,
+        )
 
         return {
             "status": "completed",
-            "metrics": metrics,
+            "train_metrics": train_metrics,
+            "test_metrics": test_metrics,
+            "confusion_matrix": cm,
             "model_path": save_path,
             "metadata": model.metadata(),
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("training_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))

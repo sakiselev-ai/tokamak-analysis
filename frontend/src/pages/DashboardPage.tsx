@@ -6,10 +6,15 @@ import type { Experiment } from '../types';
 
 export default function DashboardPage() {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/experiments/').then((res) => setExperiments(res.data.experiments)).catch(() => {});
+    api
+      .get('/experiments/')
+      .then((res) => setExperiments(res.data.experiments))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const handleLoaded = (exp: Experiment) => {
@@ -17,80 +22,99 @@ export default function DashboardPage() {
     navigate(`/experiment/${exp.id}`);
   };
 
+  const preprocessedCount = experiments.filter((e) => e.status === 'preprocessed').length;
+  const totalSignals = experiments.reduce(
+    (sum, e) => sum + ((e.metadata_json?.signal_count as number) || 0),
+    0
+  );
+
+  const statusBadge = (status: string) => {
+    const cls =
+      status === 'preprocessed'
+        ? 'badge-success'
+        : status === 'error'
+        ? 'badge-danger'
+        : 'badge-warning';
+    return <span className={`badge ${cls}`}>{status}</span>;
+  };
+
   return (
     <div>
-      <h2 style={{ marginBottom: 20 }}>Dashboard</h2>
+      <h2 className="mb-lg">Dashboard</h2>
+
+      {/* Summary Stats */}
+      <div className="grid-3 mb-lg">
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-primary">{'\u26A1'}</div>
+          <div>
+            <div className="stat-value">{experiments.length}</div>
+            <div className="stat-label">Экспериментов</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-success">{'\u2713'}</div>
+          <div>
+            <div className="stat-value">{preprocessedCount}</div>
+            <div className="stat-label">Обработано</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-warning">{'\u223F'}</div>
+          <div>
+            <div className="stat-value">{totalSignals}</div>
+            <div className="stat-label">Сигналов</div>
+          </div>
+        </div>
+      </div>
+
       <ShotLoader onLoaded={handleLoaded} />
 
-      <div
-        style={{
-          background: '#fff',
-          padding: 20,
-          borderRadius: 8,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        }}
-      >
-        <h3 style={{ margin: '0 0 12px' }}>Загруженные эксперименты</h3>
-        {experiments.length === 0 ? (
-          <p style={{ color: '#999' }}>Нет загруженных экспериментов</p>
+      <div className="card">
+        <div className="card-header">
+          <h3>Загруженные эксперименты</h3>
+        </div>
+
+        {loading ? (
+          <div className="loading-overlay">
+            <span className="spinner spinner-lg" />
+            Загрузка данных...
+          </div>
+        ) : experiments.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">{'\u269B'}</div>
+            <div className="empty-state-text">Нет загруженных экспериментов</div>
+            <div className="empty-state-hint">
+              Загрузите данные выстрела, указав Shot ID выше
+            </div>
+          </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="table">
             <thead>
-              <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
-                <th style={{ padding: 8 }}>Shot ID</th>
-                <th style={{ padding: 8 }}>Источник</th>
-                <th style={{ padding: 8 }}>Статус</th>
-                <th style={{ padding: 8 }}>Дата</th>
-                <th style={{ padding: 8 }}>Сигналов</th>
-                <th style={{ padding: 8 }}></th>
+              <tr>
+                <th>Shot ID</th>
+                <th>Источник</th>
+                <th>Статус</th>
+                <th>Дата</th>
+                <th>Сигналов</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {experiments.map((exp) => (
-                <tr key={exp.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: 8, fontWeight: 600 }}>{exp.shot_id}</td>
-                  <td style={{ padding: 8 }}>{exp.source.toUpperCase()}</td>
-                  <td style={{ padding: 8 }}>
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        fontSize: 12,
-                        background:
-                          exp.status === 'preprocessed'
-                            ? '#d4edda'
-                            : exp.status === 'error'
-                            ? '#f8d7da'
-                            : '#fff3cd',
-                        color:
-                          exp.status === 'preprocessed'
-                            ? '#155724'
-                            : exp.status === 'error'
-                            ? '#721c24'
-                            : '#856404',
-                      }}
-                    >
-                      {exp.status}
-                    </span>
+                <tr key={exp.id}>
+                  <td className="font-semibold">{exp.shot_id}</td>
+                  <td>
+                    <span className="badge badge-info">{exp.source.toUpperCase()}</span>
                   </td>
-                  <td style={{ padding: 8, fontSize: 13, color: '#666' }}>
+                  <td>{statusBadge(exp.status)}</td>
+                  <td className="text-sm text-secondary">
                     {new Date(exp.loaded_at).toLocaleString('ru')}
                   </td>
-                  <td style={{ padding: 8 }}>
-                    {exp.metadata_json?.signal_count as number ?? '—'}
-                  </td>
-                  <td style={{ padding: 8 }}>
+                  <td>{(exp.metadata_json?.signal_count as number) ?? '\u2014'}</td>
+                  <td>
                     <button
+                      className="btn btn-primary btn-sm"
                       onClick={() => navigate(`/experiment/${exp.id}`)}
-                      style={{
-                        padding: '4px 12px',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        fontSize: 13,
-                      }}
                     >
                       Открыть
                     </button>

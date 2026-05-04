@@ -64,6 +64,7 @@ async def login(
             details={"email": data.email},
             request=request,
         )
+        await db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     if not user.is_active:
