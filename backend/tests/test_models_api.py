@@ -1,17 +1,27 @@
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from httpx import AsyncClient
+
+
+def _mock_celery():
+    """Return a patch that prevents Celery from trying to connect to Redis."""
+    mock_result = MagicMock()
+    mock_result.id = "fake-celery-task-id"
+    return patch("app.api.models.train_model_task.delay", return_value=mock_result)
 
 
 @pytest.mark.asyncio
 async def test_train_valid_model(auth_client: AsyncClient):
     """Train request with valid model_type should return 202."""
-    res = await auth_client.post("/api/v1/models/train", json={
-        "model_type": "random_forest",
-        "task": "classification",
-        "hyperparameters": {"n_estimators": 10, "max_depth": 5},
-    })
+    with _mock_celery():
+        res = await auth_client.post("/api/v1/models/train", json={
+            "model_type": "random_forest",
+            "task": "classification",
+            "hyperparameters": {"n_estimators": 10, "max_depth": 5},
+        })
     assert res.status_code == 202
     data = res.json()
     assert data["status"] == "queued"
@@ -22,10 +32,11 @@ async def test_train_valid_model(auth_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_train_lstm_model(auth_client: AsyncClient):
     """Train request with lstm_attention should return 202."""
-    res = await auth_client.post("/api/v1/models/train", json={
-        "model_type": "lstm_attention",
-        "task": "disruption_prediction",
-    })
+    with _mock_celery():
+        res = await auth_client.post("/api/v1/models/train", json={
+            "model_type": "lstm_attention",
+            "task": "disruption_prediction",
+        })
     assert res.status_code == 202
     data = res.json()
     assert data["status"] == "queued"
@@ -62,10 +73,11 @@ async def test_list_runs_empty(auth_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_list_runs_after_train(auth_client: AsyncClient):
     """After training, the run should appear in the list."""
-    train_res = await auth_client.post("/api/v1/models/train", json={
-        "model_type": "random_forest",
-        "task": "classification",
-    })
+    with _mock_celery():
+        train_res = await auth_client.post("/api/v1/models/train", json={
+            "model_type": "random_forest",
+            "task": "classification",
+        })
     assert train_res.status_code == 202
 
     res = await auth_client.get("/api/v1/models/runs")
@@ -86,11 +98,12 @@ async def test_get_run_not_found(auth_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_run_after_train(auth_client: AsyncClient):
     """Retrieve a specific run by ID after training."""
-    train_res = await auth_client.post("/api/v1/models/train", json={
-        "model_type": "transformer",
-        "task": "classification",
-        "hyperparameters": {"d_model": 64},
-    })
+    with _mock_celery():
+        train_res = await auth_client.post("/api/v1/models/train", json={
+            "model_type": "transformer",
+            "task": "classification",
+            "hyperparameters": {"d_model": 64},
+        })
     run_id = train_res.json()["run_id"]
 
     res = await auth_client.get(f"/api/v1/models/runs/{run_id}")

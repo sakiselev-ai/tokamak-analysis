@@ -41,3 +41,14 @@ class ExperimentListResponse(BaseModel):
 
 class ExportRequest(BaseModel):
     format: str = Field(default="csv", pattern="^(csv|json)$")
+
+
+class BatchLoadRequest(BaseModel):
+    shot_ids: list[int] = Field(min_length=1, max_length=50)
+    source: ExperimentSource = ExperimentSource.MAST
+
+
+class BatchLoadResponse(BaseModel):
+    experiments: list[ExperimentResponse]
+    failed: list[dict]
+    total_loaded: int

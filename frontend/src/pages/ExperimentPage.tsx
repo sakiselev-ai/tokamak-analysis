@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import TimeSeriesChart from '../components/TimeSeriesChart';
 import PredictionPanel from '../components/PredictionPanel';
-import type { Experiment, TimeSeries } from '../types';
+import RecommendationPanel from '../components/RecommendationPanel';
+import type { Experiment, TimeSeries, Recommendation } from '../types';
 
 export default function ExperimentPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ export default function ExperimentPage() {
   const [selectedParams, setSelectedParams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -26,6 +28,10 @@ export default function ExperimentPage() {
           tsRes.data.slice(0, 4).map((ts: TimeSeries) => ts.parameter_name)
         );
         setLoading(false);
+        // Fetch recommendations if available
+        api.get(`/experiments/${id}/recommendations`)
+          .then((recRes) => setRecommendations(recRes.data))
+          .catch(() => {});
       })
       .catch(() => setLoading(false));
   }, [id]);
@@ -161,6 +167,8 @@ export default function ExperimentPage() {
           </div>
 
           <PredictionPanel experimentId={experiment.id} />
+
+          <RecommendationPanel recommendations={recommendations} />
 
           <div className="export-actions">
             <a

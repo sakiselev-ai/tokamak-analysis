@@ -59,3 +59,23 @@ export interface ModelRun {
   finished_at: string | null;
   created_at: string;
 }
+
+export interface Recommendation {
+  action: string;
+  priority: 'high' | 'medium' | 'low';
+  parameter: string;
+  description: string;
+  suggested_action: string;
+  timeframe_ms: number;
+}
+
+export interface BatchLoadResult {
+  experiments: Experiment[];
+  failed: { shot_id: number; error: string }[];
+  total_loaded: number;
+}
+
+export interface UserSettings {
+  disruption_threshold: number;
+  notification_enabled: boolean;
+}

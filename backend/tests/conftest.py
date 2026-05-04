@@ -59,6 +59,7 @@ async def auth_client(client: AsyncClient) -> AsyncClient:
         "email": "test@mephi.ru",
         "password": "testpassword123",
         "full_name": "Test User",
+        "consent_given": True,
     })
     res = await client.post("/api/v1/auth/login", json={
         "email": "test@mephi.ru",

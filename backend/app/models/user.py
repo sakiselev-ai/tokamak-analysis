@@ -30,7 +30,14 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    consent_given_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     experiments = relationship("Experiment", back_populates="user")
     model_runs = relationship("ModelRun", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
+    settings = relationship("UserSettings", back_populates="user", uselist=False)

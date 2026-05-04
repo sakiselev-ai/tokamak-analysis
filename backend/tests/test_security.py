@@ -58,6 +58,7 @@ async def test_refresh_token_cannot_access_protected_endpoints(client: AsyncClie
         "email": "refreshonly@mephi.ru",
         "password": "password123",
         "full_name": "Refresh Only",
+        "consent_given": True,
     })
     login_res = await client.post("/api/v1/auth/login", json={
         "email": "refreshonly@mephi.ru",
@@ -79,6 +80,7 @@ async def test_access_token_cannot_refresh(client: AsyncClient):
         "email": "accessonly@mephi.ru",
         "password": "password123",
         "full_name": "Access Only",
+        "consent_given": True,
     })
     login_res = await client.post("/api/v1/auth/login", json={
         "email": "accessonly@mephi.ru",
@@ -143,6 +145,7 @@ async def test_audit_log_on_login(client: AsyncClient):
         "email": "audit@mephi.ru",
         "password": "password123",
         "full_name": "Audit User",
+        "consent_given": True,
     })
     await client.post("/api/v1/auth/login", json={
         "email": "audit@mephi.ru",
@@ -172,6 +175,7 @@ async def test_audit_log_on_failed_login(client: AsyncClient):
         "email": "failaudit@mephi.ru",
         "password": "password123",
         "full_name": "Fail Audit",
+        "consent_given": True,
     })
     await client.post("/api/v1/auth/login", json={
         "email": "failaudit@mephi.ru",

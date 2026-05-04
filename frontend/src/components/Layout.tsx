@@ -26,6 +26,12 @@ export default function Layout() {
             <NavLink to="/training">
               <span>{'\u2699'}</span> Training
             </NavLink>
+            <NavLink to="/batch">
+              <span>{'\u2630'}</span> Batch
+            </NavLink>
+            <NavLink to="/settings">
+              <span>{'\u2638'}</span> Settings
+            </NavLink>
           </nav>
         </div>
         <div className="app-header-right">
@@ -62,11 +68,24 @@ export default function Layout() {
                 <span className="sidebar-icon">{'\u26A1'}</span>
                 Эксперименты
               </NavLink>
+              <NavLink to="/batch">
+                <span className="sidebar-icon">{'\u2630'}</span>
+                Пакетная обработка
+              </NavLink>
             </nav>
           </div>
 
           <div className="sidebar-section">
             <div className="sidebar-section-title">Аккаунт</div>
+            <nav className="sidebar-nav">
+              <NavLink to="/settings">
+                <span className="sidebar-icon">{'\u2638'}</span>
+                Настройки
+              </NavLink>
+            </nav>
+          </div>
+
+          <div className="sidebar-section">
             <nav className="sidebar-nav">
               <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }}>
                 <span className="sidebar-icon">{'\u2192'}</span>

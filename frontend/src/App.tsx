@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ExperimentPage from './pages/ExperimentPage';
 import TrainingPage from './pages/TrainingPage';
+import BatchPage from './pages/BatchPage';
+import SettingsPage from './pages/SettingsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -29,6 +31,8 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="experiment/:id" element={<ExperimentPage />} />
           <Route path="training" element={<TrainingPage />} />
+          <Route path="batch" element={<BatchPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

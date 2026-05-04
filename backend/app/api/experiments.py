@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import json
@@ -17,6 +18,8 @@ from app.database import get_db
 from app.models.experiment import Experiment, ExperimentStatus, TimeSeriesData
 from app.models.user import User
 from app.schemas.experiment import (
+    BatchLoadRequest,
+    BatchLoadResponse,
     ExperimentListResponse,
     ExperimentLoadRequest,
     ExperimentResponse,
@@ -85,6 +88,83 @@ async def load_experiment(
         .where(Experiment.id == experiment.id)
     )
     return result.scalar_one()
+
+
+@router.post("/batch-load", response_model=BatchLoadResponse, status_code=status.HTTP_201_CREATED)
+async def batch_load_experiments(
+    data: BatchLoadRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    async def _load_single(shot_id: int) -> tuple[int, Experiment | None, str | None]:
+        """Load a single shot, returning (shot_id, experiment_or_none, error_or_none)."""
+        try:
+            client = FairMastClient()
+            signals = await client.load_shot(shot_id)
+
+            experiment = Experiment(
+                shot_id=shot_id,
+                source=data.source,
+                status=ExperimentStatus.LOADING,
+                user_id=current_user.id,
+            )
+            db.add(experiment)
+            await db.flush()
+
+            for signal_name, signal_data in signals.items():
+                ts, vals = preprocess_timeseries(signal_data["timestamps"], signal_data["values"])
+                ts_record = TimeSeriesData(
+                    experiment_id=experiment.id,
+                    parameter_name=signal_name,
+                    timestamps=ts,
+                    values=vals,
+                    units=signal_data.get("units"),
+                    description=signal_data.get("description"),
+                )
+                db.add(ts_record)
+
+            experiment.status = ExperimentStatus.PREPROCESSED
+            experiment.metadata_json = {"signal_count": len(signals), "shot_id": shot_id}
+            await db.flush()
+            return shot_id, experiment, None
+        except Exception as e:
+            return shot_id, None, str(e)
+
+    tasks = [_load_single(shot_id) for shot_id in data.shot_ids]
+    results = await asyncio.gather(*tasks, return_exceptions=False)
+
+    loaded_experiments: list[Experiment] = []
+    failed: list[dict] = []
+    for shot_id, experiment, error in results:
+        if experiment is not None:
+            loaded_experiments.append(experiment)
+        else:
+            failed.append({"shot_id": shot_id, "error": error})
+
+    # Reload experiments with timeseries eagerly loaded
+    experiment_ids = [exp.id for exp in loaded_experiments]
+    if experiment_ids:
+        reload_result = await db.execute(
+            select(Experiment)
+            .options(selectinload(Experiment.timeseries))
+            .where(Experiment.id.in_(experiment_ids))
+        )
+        loaded_experiments = list(reload_result.scalars().all())
+
+    await log_action(
+        db, "batch_load_experiments", "experiment",
+        user_id=current_user.id,
+        details={"shot_ids": data.shot_ids, "total_loaded": len(loaded_experiments), "total_failed": len(failed)},
+        request=request,
+    )
+    await db.flush()
+
+    return BatchLoadResponse(
+        experiments=loaded_experiments,
+        failed=failed,
+        total_loaded=len(loaded_experiments),
+    )
 
 
 @router.get("/", response_model=ExperimentListResponse)

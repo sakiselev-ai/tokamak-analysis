@@ -32,6 +32,7 @@ class DisruptionPredictResponse(BaseModel):
     warning_time_ms: float | None = None
     inference_time_ms: float
     model_id: int
+    recommendations: list[dict] = []
 
 
 class TrainRequest(BaseModel):
@@ -46,6 +47,37 @@ class TrainResponse(BaseModel):
     model_id: int
     status: str
     celery_task_id: str | None = None
+
+
+class BatchClassifyRequest(BaseModel):
+    experiment_ids: list[int] = Field(min_length=1, max_length=50)
+    model_id: int | None = None
+
+
+class BatchClassifyResponse(BaseModel):
+    results: list[ClassifyResponse]
+    failed: list[dict]
+
+
+class BatchDisruptionRequest(BaseModel):
+    experiment_ids: list[int] = Field(min_length=1, max_length=50)
+    model_id: int | None = None
+    threshold: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
+class BatchDisruptionResponse(BaseModel):
+    results: list[DisruptionPredictResponse]
+    failed: list[dict]
+
+
+class ThresholdUpdateRequest(BaseModel):
+    threshold: float = Field(ge=0.0, le=1.0)
+
+
+class ThresholdResponse(BaseModel):
+    threshold: float
+    notification_enabled: bool
+    updated_at: str | None = None
 
 
 class ModelRunResponse(BaseModel):

@@ -14,7 +14,7 @@ from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from app.api import admin, auth, experiments, models, predictions
+from app.api import admin, auth, experiments, legal, models, predictions
 from app.config import settings
 from app.core.headers import SecurityHeadersMiddleware
 from app.core.logging_config import setup_logging
@@ -92,6 +92,7 @@ app.include_router(experiments.router)
 app.include_router(predictions.router)
 app.include_router(models.router)
 app.include_router(admin.router)
+app.include_router(legal.router)
 
 # Prometheus metrics
 instrumentator.instrument(app).expose(app)
