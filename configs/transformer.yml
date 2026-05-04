@@ -1,0 +1,32 @@
+# Autoregressive Transformer — experimental model (ADR-004)
+model_type: transformer
+task: disruption_prediction
+
+hyperparameters:
+  input_size: 39  # FAIR-MAST signals
+  d_model: 128
+  num_heads: 8
+  num_layers: 4
+  dim_feedforward: 512
+  positional_encoding: rope  # absolute | rope | alibi
+  dropout: 0.1
+  sequence_length: 500
+  learning_rate: 0.0005
+  warmup_steps: 1000
+  batch_size: 16
+  epochs: 40
+  early_stopping_patience: 8
+  optimizer: adamw
+  weight_decay: 0.0001
+  scheduler: cosine_annealing_warmup
+
+grid_search:
+  d_model: [64, 128, 256]
+  num_heads: [4, 8, 16]
+  num_layers: [2, 4, 6]
+  dim_feedforward: [256, 512, 1024]
+  positional_encoding: [absolute, rope, alibi]
+  dropout: [0.1, 0.2]
+  sequence_length: [200, 500, 1000]
+  learning_rate: [0.0001, 0.0005, 0.001]
+  batch_size: [8, 16, 32]

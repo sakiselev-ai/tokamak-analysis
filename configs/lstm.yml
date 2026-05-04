@@ -1,0 +1,31 @@
+# Bidirectional LSTM with attention — primary model (ADR-004)
+model_type: lstm_attention
+task: disruption_prediction
+
+hyperparameters:
+  input_size: 39  # FAIR-MAST signals
+  hidden_size: 128
+  num_layers: 2
+  bidirectional: true
+  dropout: 0.3
+  attention_heads: 4
+  sequence_length: 200  # ~200ms at 1kHz
+  learning_rate: 0.001
+  batch_size: 32
+  epochs: 50
+  early_stopping_patience: 10
+  optimizer: adamw
+  weight_decay: 0.0001
+  scheduler: reduce_lr_on_plateau
+  scheduler_factor: 0.5
+
+grid_search:
+  hidden_size: [64, 128, 256]
+  num_layers: [1, 2, 3]
+  bidirectional: [true, false]
+  dropout: [0.1, 0.2, 0.3, 0.5]
+  attention_heads: [1, 2, 4, 8]
+  sequence_length: [100, 200, 500]
+  learning_rate: [0.0001, 0.0005, 0.001]
+  batch_size: [16, 32, 64]
+  optimizer: [adam, adamw]
