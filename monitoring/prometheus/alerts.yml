@@ -50,3 +50,39 @@ groups:
           severity: critical
         annotations:
           summary: "PostgreSQL is down"
+
+      - alert: LongTraining
+        expr: (time() - ml_training_start_timestamp_seconds) > 1800
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Training running longer than 30 minutes"
+          description: "Model training job has been running for {{ $value | humanizeDuration }}"
+
+      - alert: ModelAccuracyDrift
+        expr: ml_model_accuracy < 0.7
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model accuracy dropped below threshold"
+          description: "Model {{ $labels.model_type }} accuracy is {{ $value | humanizePercentage }}, below 70% threshold"
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container memory usage above 80%"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit"
+
+      - alert: CeleryQueueBacklog
+        expr: celery_queue_length > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Celery task queue backlog"
+          description: "{{ $value }} tasks are queued, exceeding the threshold of 10"

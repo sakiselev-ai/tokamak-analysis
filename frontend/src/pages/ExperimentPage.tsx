@@ -1,10 +1,12 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import TimeSeriesChart from '../components/TimeSeriesChart';
 import PredictionPanel from '../components/PredictionPanel';
+import DisruptionChart from '../components/DisruptionChart';
 import RecommendationPanel from '../components/RecommendationPanel';
-import type { Experiment, TimeSeries, Recommendation } from '../types';
+import ExportButton from '../components/ExportButton';
+import type { Experiment, TimeSeries, Recommendation, DisruptionResult } from '../types';
 
 export default function ExperimentPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +16,11 @@ export default function ExperimentPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [disruptionResult, setDisruptionResult] = useState<DisruptionResult | null>(null);
+
+  const handleDisruptionResult = useCallback((result: DisruptionResult) => {
+    setDisruptionResult(result);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -166,23 +173,21 @@ export default function ExperimentPage() {
             />
           </div>
 
-          <PredictionPanel experimentId={experiment.id} />
+          <PredictionPanel experimentId={experiment.id} onDisruptionResult={handleDisruptionResult} />
+
+          {disruptionResult && (
+            <DisruptionChart
+              timestamps={disruptionResult.timestamps}
+              probabilities={disruptionResult.probabilities}
+              threshold={0.7}
+              warningTimeMs={disruptionResult.warning_time_ms ?? undefined}
+            />
+          )}
 
           <RecommendationPanel recommendations={recommendations} />
 
           <div className="export-actions">
-            <a
-              href={`/api/v1/experiments/${experiment.id}/export?format=csv`}
-              style={{ background: '#3498db' }}
-            >
-              {'\u21E9'} Экспорт CSV
-            </a>
-            <a
-              href={`/api/v1/experiments/${experiment.id}/export?format=json`}
-              style={{ background: '#9b59b6' }}
-            >
-              {'\u21E9'} Экспорт JSON
-            </a>
+            <ExportButton experimentId={experiment.id} />
           </div>
         </div>
       </div>

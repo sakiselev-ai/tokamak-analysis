@@ -79,3 +79,13 @@ export interface UserSettings {
   disruption_threshold: number;
   notification_enabled: boolean;
 }
+
+export interface MLModel {
+  id: number;
+  name: string;
+  model_type: string;
+  task: string;
+  is_active: boolean;
+  metrics_json: Record<string, number> | null;
+  created_at: string;
+}

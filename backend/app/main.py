@@ -7,7 +7,7 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -107,6 +107,11 @@ async def health():
         "version": "1.0.0",
         "ml_service": "connected" if ml_status else "unavailable",
     }
+
+
+@app.get("/api/docs")
+async def api_docs_redirect():
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

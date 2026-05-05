@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsUser } from './helpers';
+import { loginAsUser, ensureExperimentAndOpen, KNOWN_SHOT_ID } from './helpers';
 
 test.describe('Experiments', () => {
   test.beforeEach(async ({ page }) => {
@@ -7,78 +7,78 @@ test.describe('Experiments', () => {
   });
 
   // -------------------------------------------------------------------
-  // TC-001: Load a valid shot from FAIR-MAST
+  // Load a valid shot from FAIR-MAST
   // -------------------------------------------------------------------
-  test('TC-001: Load valid shot', async ({ page }) => {
+  test('load valid shot shows experiment in table', async ({ page }) => {
     await page.goto('/');
 
     // Fill the Shot ID input and click "Загрузить"
-    await page.fill('input[type="number"]', '30420');
-    await page.click('text=Загрузить');
+    await page.locator('input[type="number"]').fill(KNOWN_SHOT_ID);
+    await page.locator('button:has-text("Загрузить")').click();
 
-    // The experiment may take a while to load from FAIR-MAST S3.
-    // After loading it should show up in the experiments table with status
-    // "preprocessed" or the shot id itself.
+    // After loading it should appear in the experiments table
     await expect(
-      page.locator('text=preprocessed').or(page.locator('text=30420')),
-    ).toBeVisible({ timeout: 90000 });
+      page.locator(`text=${KNOWN_SHOT_ID}`).or(page.locator('text=preprocessed')),
+    ).toBeVisible({ timeout: 90_000 });
   });
 
   // -------------------------------------------------------------------
-  // TC-002: Load an invalid / non-existent shot
+  // Load an invalid / non-existent shot
   // -------------------------------------------------------------------
-  test('TC-002: Load invalid shot', async ({ page }) => {
+  test('load invalid shot shows error', async ({ page }) => {
     await page.goto('/');
 
-    await page.fill('input[type="number"]', '999999999');
-    await page.click('text=Загрузить');
+    await page.locator('input[type="number"]').fill('999999999');
+    await page.locator('button:has-text("Загрузить")').click();
 
-    // Should show an error message (Russian "Ошибка" or English fallback)
+    // Should show an error message
     await expect(
       page
         .locator('text=Ошибка')
         .or(page.locator('text=error'))
         .or(page.locator('text=Failed'))
         .or(page.locator('text=не найден')),
-    ).toBeVisible({ timeout: 30000 });
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   // -------------------------------------------------------------------
-  // TC-003: Visualize time series for a loaded experiment
+  // Visualize time series for a loaded experiment
   // -------------------------------------------------------------------
-  test('TC-003: Visualize time series', async ({ page }) => {
-    await page.goto('/');
+  test('experiment page renders Plotly chart', async ({ page }) => {
+    await ensureExperimentAndOpen(page);
 
-    // If experiments already exist, click the first "Открыть" button
-    const openBtn = page.locator('button:has-text("Открыть")').first();
+    // Plotly chart should be visible (asserted in helper, but double-check)
+    await expect(page.locator('.js-plotly-plot')).toBeVisible();
 
-    // If there are no experiments yet, load one first
-    if (!(await openBtn.isVisible({ timeout: 3000 }).catch(() => false))) {
-      await page.fill('input[type="number"]', '30420');
-      await page.click('text=Загрузить');
-      await expect(page.locator('button:has-text("Открыть")').first()).toBeVisible({
-        timeout: 90000,
-      });
-    }
-
-    await page.locator('button:has-text("Открыть")').first().click();
-
-    // Wait for the experiment page and verify a Plotly chart is rendered
-    await expect(page.locator('.js-plotly-plot')).toBeVisible({ timeout: 15000 });
+    // The shot ID should appear in the heading
+    await expect(page.locator('h2')).toContainText('Выстрел');
   });
 
   // -------------------------------------------------------------------
-  // TC-012: Preprocessing handles missing data (interpolation applied)
+  // Experiment detail shows metadata
   // -------------------------------------------------------------------
-  test('TC-012: Preprocessing handles missing data', async ({ page }) => {
+  test('experiment page shows status badge and source', async ({ page }) => {
+    await ensureExperimentAndOpen(page);
+
+    // Status badge (preprocessed / loading / error)
+    await expect(
+      page.locator('.badge-success, .badge-warning, .badge-danger'),
+    ).toBeVisible();
+
+    // Source badge (MAST)
+    await expect(page.locator('.badge-info')).toContainText('MAST');
+  });
+
+  // -------------------------------------------------------------------
+  // Preprocessing handles missing data (interpolation applied)
+  // -------------------------------------------------------------------
+  test('preprocessing sets status to preprocessed', async ({ page }) => {
     await page.goto('/');
 
-    // Load a shot — the backend preprocessing pipeline should interpolate
-    // missing values and set the experiment status to "preprocessed".
-    await page.fill('input[type="number"]', '30420');
-    await page.click('text=Загрузить');
+    await page.locator('input[type="number"]').fill(KNOWN_SHOT_ID);
+    await page.locator('button:has-text("Загрузить")').click();
 
     // Wait for the status badge to show "preprocessed"
-    await expect(page.locator('text=preprocessed')).toBeVisible({ timeout: 90000 });
+    await expect(page.locator('text=preprocessed')).toBeVisible({ timeout: 90_000 });
   });
 });

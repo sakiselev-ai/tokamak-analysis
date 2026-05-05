@@ -15,10 +15,21 @@ import urllib.request
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
-PORT = int(os.environ.get("PORT", "8080"))
+PORT = int(os.environ.get("PORT", "5000"))
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("telegram-alert")
+
+SEVERITY_RU = {
+    "critical": "критический",
+    "warning": "предупреждение",
+    "info": "информация",
+}
+
+STATUS_RU = {
+    "firing": "СРАБОТАЛ",
+    "resolved": "РЕШЕНО",
+}
 
 
 def send_telegram(message: str) -> None:
@@ -42,22 +53,33 @@ def send_telegram(message: str) -> None:
 
 
 def format_alert(alert: dict) -> str:
-    status = alert.get("status", "unknown").upper()
+    status = alert.get("status", "unknown")
     labels = alert.get("labels", {})
     annotations = alert.get("annotations", {})
 
-    emoji = "\U0001f534" if status == "FIRING" else "\u2705"
+    is_firing = status.lower() == "firing"
+    emoji = "\U0001f534" if is_firing else "\u2705"
+    status_text = STATUS_RU.get(status.lower(), status.upper())
     severity = labels.get("severity", "unknown")
+    severity_text = SEVERITY_RU.get(severity, severity)
     name = labels.get("alertname", "Unknown")
-    summary = annotations.get("summary", "No summary")
+    summary = annotations.get("summary", "Нет описания")
     description = annotations.get("description", "")
 
-    msg = f"{emoji} <b>{status}: {name}</b>\n"
-    msg += f"Severity: {severity}\n"
-    msg += f"Summary: {summary}\n"
+    msg = f"{emoji} <b>{status_text}: {name}</b>\n"
+    msg += f"Уровень: {severity_text}\n"
+    msg += f"Описание: {summary}\n"
     if description:
-        msg += f"Details: {description}\n"
-    msg += f"Source: Tokamak Analysis Platform"
+        msg += f"Подробности: {description}\n"
+    if is_firing:
+        starts_at = alert.get("startsAt", "")
+        if starts_at:
+            msg += f"Начало: {starts_at[:19].replace('T', ' ')}\n"
+    else:
+        ends_at = alert.get("endsAt", "")
+        if ends_at:
+            msg += f"Завершено: {ends_at[:19].replace('T', ' ')}\n"
+    msg += f"Источник: Tokamak Analysis Platform"
 
     return msg
 
@@ -83,6 +105,12 @@ class AlertHandler(BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode())
+
+    def do_GET(self):
+        """Health check endpoint."""
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
 
     def log_message(self, format, *args):
         logger.info(format % args)

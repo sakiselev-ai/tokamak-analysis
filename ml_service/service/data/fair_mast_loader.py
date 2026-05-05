@@ -134,17 +134,93 @@ def load_shot(shot_id: int) -> dict[str, dict]:
         ) from exc
 
 
-def load_shots(shot_ids: list[int]) -> list[dict[str, dict]]:
+def load_disruption_labels(shot_ids: list[int]) -> dict[int, float | None]:
+    """Load disruption times for a list of shots from FAIR-MAST.
+
+    Reads ``cpf/disruption_time`` from each shot's Zarr store.
+
+    Args:
+        shot_ids: List of MAST shot numbers.
+
+    Returns:
+        Dictionary mapping shot_id to disruption_time (float in seconds),
+        or ``None`` if the shot did not disrupt or the field is missing.
+    """
+    result: dict[int, float | None] = {}
+    try:
+        import s3fs as _s3fs
+        import zarr
+
+        fs = _get_filesystem()
+        for sid in shot_ids:
+            try:
+                shot_path = f"{FAIR_MAST_BUCKET}/{sid}"
+                if not fs.exists(shot_path):
+                    logger.warning("shot_not_found_for_label", shot_id=sid)
+                    result[sid] = None
+                    continue
+
+                store = _s3fs.S3Map(root=shot_path, s3=fs)
+                root = zarr.open(store, mode="r")
+
+                if "cpf" in root and "disruption_time" in root["cpf"]:
+                    dt_val = float(np.array(root["cpf"]["disruption_time"]).flat[0])
+                    # Negative or NaN disruption_time means no disruption
+                    if np.isfinite(dt_val) and dt_val >= 0:
+                        result[sid] = dt_val
+                    else:
+                        result[sid] = None
+                else:
+                    result[sid] = None
+
+                logger.debug("disruption_label_loaded", shot_id=sid, disruption_time=result[sid])
+            except Exception as exc:
+                logger.warning("disruption_label_failed", shot_id=sid, error=str(exc))
+                result[sid] = None
+    except Exception as exc:
+        logger.error("disruption_labels_connection_failed", error=str(exc))
+        # Fill remaining shot_ids with None
+        for sid in shot_ids:
+            if sid not in result:
+                result[sid] = None
+
+    return result
+
+
+def make_disruption_labels(
+    shot_ids: list[int],
+    disruption_times: dict[int, float | None],
+) -> np.ndarray:
+    """Convert disruption times to binary labels.
+
+    Args:
+        shot_ids: Ordered list of shot IDs matching the feature array order.
+        disruption_times: Mapping from shot_id to disruption_time (or None).
+
+    Returns:
+        1-D float32 array: 1.0 for disrupted shots, 0.0 for stable shots.
+    """
+    labels = np.zeros(len(shot_ids), dtype=np.float32)
+    for i, sid in enumerate(shot_ids):
+        dt = disruption_times.get(sid)
+        if dt is not None:
+            labels[i] = 1.0
+    return labels
+
+
+def load_shots(shot_ids: list[int]) -> tuple[list[dict[str, dict]], list[int]]:
     """Load multiple shots, skipping any that fail.
 
     Returns:
-        List of signal dictionaries, one per successfully loaded shot.
+        Tuple of (signal dictionaries, successfully loaded shot IDs).
     """
     results: list[dict[str, dict]] = []
+    loaded_ids: list[int] = []
     for sid in shot_ids:
         try:
             data = load_shot(sid)
             results.append(data)
+            loaded_ids.append(sid)
         except (FileNotFoundError, ConnectionError) as exc:
             logger.warning("shot_skipped", shot_id=sid, reason=str(exc))
-    return results
+    return results, loaded_ids

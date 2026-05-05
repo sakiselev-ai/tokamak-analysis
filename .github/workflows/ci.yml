@@ -101,3 +101,74 @@ jobs:
         run: docker build -t tokamak-ml-service ./ml_service
       - name: Build frontend
         run: docker build -t tokamak-frontend ./frontend
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file for docker compose
+        run: |
+          cat > .env << 'ENVEOF'
+          DATABASE_URL=postgresql+asyncpg://tokamak:tokamak_password@postgres:5432/tokamak
+          REDIS_URL=redis://redis:6379/0
+          JWT_SECRET_KEY=e2e_test_secret_key_not_for_production
+          ML_SERVICE_URL=http://ml-service:8001
+          MINIO_ENDPOINT=minio:9000
+          MINIO_ACCESS_KEY=minioadmin
+          MINIO_SECRET_KEY=minioadmin
+          ENVEOF
+
+      - name: Start all services with docker compose
+        run: docker compose up -d --build --wait
+        timeout-minutes: 10
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for nginx to respond on port 80..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost/health > /dev/null 2>&1; then
+              echo "Backend health check passed."
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Timed out waiting for services."
+              docker compose ps
+              docker compose logs --tail=50
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright and browsers
+        working-directory: e2e
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: e2e
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: http://localhost
+        run: npx playwright test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          retention-days: 14
+
+      - name: Print docker compose logs on failure
+        if: failure()
+        run: docker compose logs --tail=100

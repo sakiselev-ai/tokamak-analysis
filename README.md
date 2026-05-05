@@ -1,5 +1,7 @@
 # Tokamak Analysis — ИИ-система для анализа экспериментальных данных токамаков
 
+[![CI](https://github.com/mephi-tokamak/tokamak-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/mephi-tokamak/tokamak-analysis/actions/workflows/ci.yml)
+
 НИЯУ МИФИ | Версия 1.0 | 2026
 
 ## Описание
@@ -27,16 +29,29 @@ ML-платформа для анализа и оптимизации данны
 
 Подробнее — [ARCHITECTURE.md](ARCHITECTURE.md).
 
+## Документация
+
+| Документ | Описание |
+|----------|----------|
+| [Руководство пользователя](docs/user-guide.md) | Полное руководство по работе с платформой |
+| [Руководство по развертыванию](docs/deployment-guide.md) | Установка, настройка, SSL, бэкапы, мониторинг |
+| [API Reference](docs/api-reference.md) | Описание всех endpoint'ов с примерами |
+| [Архитектура](ARCHITECTURE.md) | C4-диаграммы, data flow, сетевая топология |
+| [Contributing](CONTRIBUTING.md) | Стиль кода, PR process, тестирование |
+
 ## Быстрый старт
 
 ### Требования
 
-- Docker + Docker Compose >= 2.0
+- Docker 24+ и Docker Compose v2+
+- 4 GB RAM, 20 GB свободного места на диске
 - (для разработки) Python 3.11, Node.js 20
 
 ### Запуск
 
 ```bash
+git clone <repo-url>
+cd tokamak-analysis
 cp .env.example .env
 docker compose up -d
 ```
@@ -44,10 +59,12 @@ docker compose up -d
 | Сервис          | URL                          |
 |-----------------|------------------------------|
 | Frontend        | http://localhost              |
-| API docs        | http://localhost/docs         |
+| API docs (Swagger) | http://localhost/docs      |
 | Grafana         | http://localhost:3001         |
 | MinIO Console   | http://localhost:9001         |
 | Prometheus      | http://localhost:9090         |
+
+Подробнее о настройке -- [Руководство по развертыванию](docs/deployment-guide.md).
 
 ### Разработка (hot-reload)
 

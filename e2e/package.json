@@ -3,10 +3,11 @@
   "private": true,
   "scripts": {
     "test": "npx playwright test",
+    "test:ci": "CI=true npx playwright test",
     "test:headed": "npx playwright test --headed",
     "report": "npx playwright show-report"
   },
-  "devDependencies": {
+  "dependencies": {
     "@playwright/test": "^1.47.0"
   }
 }

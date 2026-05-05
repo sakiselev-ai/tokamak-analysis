@@ -4,9 +4,10 @@ import type { ClassifyResult, DisruptionResult } from '../types';
 
 interface Props {
   experimentId: number;
+  onDisruptionResult?: (result: DisruptionResult) => void;
 }
 
-export default function PredictionPanel({ experimentId }: Props) {
+export default function PredictionPanel({ experimentId, onDisruptionResult }: Props) {
   const [classifyResult, setClassifyResult] = useState<ClassifyResult | null>(null);
   const [disruptionResult, setDisruptionResult] = useState<DisruptionResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,7 @@ export default function PredictionPanel({ experimentId }: Props) {
         threshold: 0.7,
       });
       setDisruptionResult(res.data);
+      onDisruptionResult?.(res.data);
     } catch (err: unknown) {
       setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Ошибка предсказания');
     } finally {

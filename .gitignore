@@ -32,3 +32,18 @@ docker-compose.override.yml
 # OS
 .DS_Store
 Thumbs.db
+
+# Additional
+*.pyc
+*.pyo
+.pytest_cache/
+htmlcov/
+.coverage
+reports/
+results/
+ml_service/data/
+ml_service/models/
+e2e/test-results/
+e2e/playwright-report/
+ssl/
+*.pem

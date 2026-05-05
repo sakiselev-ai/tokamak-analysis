@@ -56,12 +56,12 @@ export default function TrainingPage() {
     fetchRuns();
   }, [fetchRuns]);
 
-  // Auto-refresh while any run is in progress
+  // Auto-refresh while any run is in progress (3s interval)
   useEffect(() => {
     const hasRunning = runs.some((r) => r.status === 'running' || r.status === 'pending');
     if (hasRunning) {
       if (!intervalRef.current) {
-        intervalRef.current = setInterval(fetchRuns, 5000);
+        intervalRef.current = setInterval(fetchRuns, 3000);
       }
     } else {
       if (intervalRef.current) {
@@ -256,63 +256,100 @@ export default function TrainingPage() {
                 </tr>
               </thead>
               <tbody>
-                {runs.map((run) => (
-                  <tr key={run.id}>
-                    <td className="font-mono text-sm">{run.id}</td>
-                    <td>
-                      <span className={`badge ${STATUS_BADGE[run.status] || 'badge-neutral'}`}>
-                        {STATUS_LABELS[run.status] || run.status}
-                      </span>
-                    </td>
-                    <td style={{ minWidth: 140 }}>
-                      {run.progress != null ? (
-                        <div>
-                          <div
-                            style={{
-                              height: 8,
-                              background: 'var(--color-border)',
-                              borderRadius: 'var(--radius-full)',
-                              overflow: 'hidden',
-                            }}
-                          >
+                {runs.map((run) => {
+                  const pct = run.progress != null ? Math.min(run.progress * 100, 100) : null;
+                  const isActive = run.status === 'running';
+                  const barColor =
+                    run.status === 'failed'
+                      ? 'var(--color-danger)'
+                      : run.status === 'completed'
+                      ? 'var(--color-success)'
+                      : 'var(--color-accent, #3498db)';
+
+                  return (
+                    <tr key={run.id} style={isActive ? { background: 'rgba(52, 152, 219, 0.04)' } : undefined}>
+                      <td className="font-mono text-sm">{run.id}</td>
+                      <td>
+                        <span className={`badge ${STATUS_BADGE[run.status] || 'badge-neutral'}`}>
+                          {STATUS_LABELS[run.status] || run.status}
+                        </span>
+                        {isActive && (
+                          <span
+                            className="spinner"
+                            style={{ width: 12, height: 12, borderWidth: 2, marginLeft: 6, verticalAlign: 'middle' }}
+                          />
+                        )}
+                      </td>
+                      <td style={{ minWidth: 160 }}>
+                        {pct != null ? (
+                          <div>
                             <div
                               style={{
-                                height: '100%',
-                                width: `${Math.min(run.progress * 100, 100)}%`,
-                                background: run.status === 'failed' ? 'var(--color-danger)' : 'var(--color-success)',
+                                height: 10,
+                                background: 'var(--color-border)',
                                 borderRadius: 'var(--radius-full)',
-                                transition: 'width 0.3s',
+                                overflow: 'hidden',
                               }}
-                            />
+                            >
+                              <div
+                                style={{
+                                  height: '100%',
+                                  width: `${pct}%`,
+                                  background: barColor,
+                                  borderRadius: 'var(--radius-full)',
+                                  transition: 'width 0.5s ease',
+                                }}
+                              />
+                            </div>
+                            <span
+                              className="text-xs"
+                              style={{
+                                marginTop: 3,
+                                display: 'inline-block',
+                                fontWeight: 600,
+                                color: isActive ? 'var(--color-accent, #3498db)' : 'var(--color-text-muted)',
+                              }}
+                            >
+                              {pct.toFixed(1)}%
+                            </span>
                           </div>
-                          <span className="text-xs text-muted" style={{ marginTop: 2, display: 'inline-block' }}>
-                            {(run.progress * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted">&mdash;</span>
-                      )}
-                    </td>
-                    <td>
-                      {run.metrics_json ? (
-                        <code className="font-mono text-xs">
-                          {Object.entries(run.metrics_json)
-                            .map(([k, v]) => `${k}: ${typeof v === 'number' ? (v as number).toFixed(4) : v}`)
-                            .join(', ')
-                            .slice(0, 100)}
-                        </code>
-                      ) : (
-                        <span className="text-muted">&mdash;</span>
-                      )}
-                    </td>
-                    <td className="text-sm text-secondary">
-                      {run.started_at ? new Date(run.started_at).toLocaleString('ru') : '\u2014'}
-                    </td>
-                    <td className="text-sm text-secondary">
-                      {run.finished_at ? new Date(run.finished_at).toLocaleString('ru') : '\u2014'}
-                    </td>
-                  </tr>
-                ))}
+                        ) : (
+                          <span className="text-muted">&mdash;</span>
+                        )}
+                      </td>
+                      <td>
+                        {run.metrics_json ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {Object.entries(run.metrics_json).map(([k, v]) => (
+                              <span
+                                key={k}
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  background: 'var(--color-bg, #f8f9fa)',
+                                  borderRadius: 4,
+                                  fontSize: 12,
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                <strong>{k}:</strong>{' '}
+                                {typeof v === 'number' ? (v as number).toFixed(4) : String(v)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted">{isActive ? 'Ожидание метрик...' : '\u2014'}</span>
+                        )}
+                      </td>
+                      <td className="text-sm text-secondary">
+                        {run.started_at ? new Date(run.started_at).toLocaleString('ru') : '\u2014'}
+                      </td>
+                      <td className="text-sm text-secondary">
+                        {run.finished_at ? new Date(run.finished_at).toLocaleString('ru') : '\u2014'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

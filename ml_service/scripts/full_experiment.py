@@ -1,16 +1,9 @@
 from __future__ import annotations
-"""Comprehensive experiment script: trains all models, runs all validations.
-
-Trains Random Forest, bi-LSTM+Attention, and Transformer models with:
-- Standard random train/test split
-- Temporal validation (train on early campaigns, test on later)
-- 5-fold cross-validation
-- Full metrics computation (accuracy, F1, AUC-ROC, latency)
-- Results saved to JSON for paper generation
+"""Comprehensive experiment: all 3 models, 5-fold CV, latency, formatted tables.
 
 Usage:
-    python full_experiment.py --data data/fair_mast_500.npz --output results/full_experiment.json
-    python full_experiment.py --data data/fair_mast_500.npz --quick  # RF only, no grid search
+    python -m scripts.full_experiment --quick
+    python scripts/full_experiment.py --data data/fair_mast_500.npz
 """
 import argparse
 import json
@@ -20,49 +13,92 @@ import time
 from pathlib import Path
 
 import numpy as np
-import torch
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (
-    accuracy_score,
-    classification_report,
-    f1_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
-# Allow imports from ml_service root
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# ---------------------------------------------------------------------------
+# sys.path fix
+# ---------------------------------------------------------------------------
+_ml_service_root = str(Path(__file__).resolve().parent.parent)
+if _ml_service_root not in sys.path:
+    sys.path.insert(0, _ml_service_root)
 
-from service.models.lstm_attention import LSTMAttentionModel
-from service.models.random_forest import RandomForestModel
-from service.models.transformer import TransformerModel
+from service.data.dataset import get_sample_dataset  # noqa: E402
+from service.data.metrics import compute_metrics as _compute_metrics  # noqa: E402
+from service.models.random_forest import RandomForestModel  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# Optional torch
+# ---------------------------------------------------------------------------
+_HAS_TORCH = False
+try:
+    import torch
+
+    from service.models.lstm_attention import LSTMAttentionModel  # noqa: E402
+    from service.models.transformer import TransformerModel  # noqa: E402
+
+    _HAS_TORCH = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    LSTMAttentionModel = None  # type: ignore[assignment,misc]
+    TransformerModel = None  # type: ignore[assignment,misc]
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Data helpers
 # ---------------------------------------------------------------------------
 
-def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_proba: np.ndarray | None = None) -> dict:
-    """Compute standard classification metrics."""
-    metrics: dict = {
-        "accuracy": float(accuracy_score(y_true, y_pred)),
-        "f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
-        "precision": float(precision_score(y_true, y_pred, average="weighted", zero_division=0)),
-        "recall": float(recall_score(y_true, y_pred, average="weighted", zero_division=0)),
-    }
-    if y_proba is not None:
-        try:
-            proba_col = y_proba[:, 1] if y_proba.ndim == 2 else y_proba
-            metrics["auc_roc"] = float(roc_auc_score(y_true, proba_col))
-        except Exception:
-            metrics["auc_roc"] = 0.0
-    return metrics
+def generate_synthetic(
+    n_samples: int = 300,
+    seq_len: int = 50,
+    n_features: int = 10,
+    seed: int = 42,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return (X, y, shot_ids) with synthetic data."""
+    rng = np.random.RandomState(seed)
+    X = rng.randn(n_samples, seq_len, n_features).astype(np.float32)
+    n_pos = n_samples // 3
+    ramp = np.linspace(0, 3, seq_len).reshape(1, seq_len, 1)
+    X[:n_pos] += ramp
+    y = np.zeros(n_samples, dtype=np.float32)
+    y[:n_pos] = 1.0
+    shot_ids = np.sort(rng.randint(11000, 30000, size=n_samples))
+    perm = rng.permutation(n_samples)
+    return X[perm], y[perm], shot_ids[perm]
+
+
+def load_or_generate(
+    data_path: str | None,
+    quick: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+    """Load .npz or fall back to synthetic data."""
+    if data_path and os.path.isfile(data_path):
+        data = np.load(data_path)
+        X, y = data["X"], data["y"]
+        shot_ids = data["shot_ids"] if "shot_ids" in data else None
+        return X, y, shot_ids
+    if data_path:
+        print(f"WARNING: '{data_path}' not found, generating synthetic data.")
+    n = 100 if quick else 300
+    sl = 30 if quick else 50
+    X, y, shot_ids = generate_synthetic(n_samples=n, seq_len=sl, n_features=10)
+    return X, y, shot_ids
+
+
+# ---------------------------------------------------------------------------
+# Metrics helpers
+# ---------------------------------------------------------------------------
+
+def compute_metrics(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    y_proba: np.ndarray | None = None,
+) -> dict:
+    """Thin wrapper around service.data.metrics.compute_metrics."""
+    return _compute_metrics(y_true, y_pred, y_proba)
 
 
 def measure_latency(predict_fn, X_sample: np.ndarray, n_runs: int = 100) -> dict:
-    """Measure single-sample inference latency."""
+    """Measure single-sample inference latency in milliseconds."""
     x_single = X_sample[:1]
     # Warmup
     for _ in range(5):
@@ -71,7 +107,7 @@ def measure_latency(predict_fn, X_sample: np.ndarray, n_runs: int = 100) -> dict
     for _ in range(n_runs):
         t0 = time.perf_counter()
         predict_fn(x_single)
-        elapsed = (time.perf_counter() - t0) * 1000  # ms
+        elapsed = (time.perf_counter() - t0) * 1000
         latencies.append(elapsed)
     arr = np.array(latencies)
     return {
@@ -83,22 +119,18 @@ def measure_latency(predict_fn, X_sample: np.ndarray, n_runs: int = 100) -> dict
 
 
 # ---------------------------------------------------------------------------
-# Random Forest helpers
+# RF helpers
 # ---------------------------------------------------------------------------
 
-def train_rf(X_train: np.ndarray, y_train: np.ndarray, quick: bool = True) -> RandomForestClassifier:
-    """Train a Random Forest classifier (on flattened input)."""
+def train_rf(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestModel:
+    """Train RF on flattened input."""
     X_flat = X_train.reshape(len(X_train), -1)
-    model = RandomForestClassifier(
-        n_estimators=200, max_depth=20, class_weight="balanced",
-        random_state=42, n_jobs=-1,
-    )
+    model = RandomForestModel()
     model.fit(X_flat, y_train)
     return model
 
 
-def eval_rf(model: RandomForestClassifier, X: np.ndarray, y: np.ndarray) -> dict:
-    """Evaluate RF model (handles flattening)."""
+def eval_rf(model: RandomForestModel, X: np.ndarray, y: np.ndarray) -> dict:
     X_flat = X.reshape(len(X), -1)
     y_pred = model.predict(X_flat)
     y_proba = model.predict_proba(X_flat)
@@ -106,12 +138,20 @@ def eval_rf(model: RandomForestClassifier, X: np.ndarray, y: np.ndarray) -> dict
 
 
 # ---------------------------------------------------------------------------
-# Neural model helpers
+# Neural helpers
 # ---------------------------------------------------------------------------
 
-def train_neural(model_cls, hyperparams: dict, X_train: np.ndarray, y_train: np.ndarray,
-                 X_val: np.ndarray, y_val: np.ndarray, device: str = "cpu"):
-    """Train a neural model (LSTM or Transformer) and return the model."""
+def _neural_device() -> str:
+    if _HAS_TORCH and torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
+
+def train_neural(model_cls, hyperparams: dict,
+                 X_train: np.ndarray, y_train: np.ndarray,
+                 X_val: np.ndarray, y_val: np.ndarray,
+                 device: str = "cpu"):
+    """Train a neural model (LSTM or Transformer) and return it."""
     model = model_cls(hyperparams=hyperparams)
     model.device = torch.device(device)
     model.model = model.model.to(model.device)
@@ -120,7 +160,6 @@ def train_neural(model_cls, hyperparams: dict, X_train: np.ndarray, y_train: np.
 
 
 def eval_neural(model, X: np.ndarray, y: np.ndarray) -> dict:
-    """Evaluate a neural model."""
     y_pred = model.predict(X)
     y_proba = model.predict_proba(X)
     return compute_metrics(y, y_pred, y_proba)
@@ -131,69 +170,59 @@ def eval_neural(model, X: np.ndarray, y: np.ndarray) -> dict:
 # ---------------------------------------------------------------------------
 
 def cross_validate_rf(X: np.ndarray, y: np.ndarray, n_folds: int = 5) -> dict:
-    """5-fold stratified cross-validation for Random Forest."""
+    """5-fold stratified CV for Random Forest."""
     X_flat = X.reshape(len(X), -1)
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
     fold_metrics = []
     for fold_idx, (train_idx, test_idx) in enumerate(skf.split(X_flat, y)):
-        model = RandomForestClassifier(
-            n_estimators=200, max_depth=20, class_weight="balanced",
-            random_state=42, n_jobs=-1,
-        )
+        model = RandomForestModel()
         model.fit(X_flat[train_idx], y[train_idx])
         y_pred = model.predict(X_flat[test_idx])
         y_proba = model.predict_proba(X_flat[test_idx])
         fm = compute_metrics(y[test_idx], y_pred, y_proba)
         fm["fold"] = fold_idx + 1
         fold_metrics.append(fm)
-        print(f"    Fold {fold_idx+1}: acc={fm['accuracy']:.4f}  f1={fm['f1']:.4f}  auc={fm.get('auc_roc', 0):.4f}")
-
-    # Aggregate
-    keys = ["accuracy", "f1", "precision", "recall", "auc_roc"]
-    summary: dict = {}
-    for k in keys:
-        vals = [fm[k] for fm in fold_metrics if k in fm]
-        if vals:
-            summary[f"{k}_mean"] = float(np.mean(vals))
-            summary[f"{k}_std"] = float(np.std(vals))
-    summary["folds"] = fold_metrics
-    return summary
+        auc = fm.get("auc_roc")
+        auc_str = f"{auc:.4f}" if auc is not None else "N/A"
+        print(f"    Fold {fold_idx+1}: acc={fm['accuracy']:.4f}  "
+              f"f1={fm['f1']:.4f}  auc={auc_str}")
+    return _aggregate_cv(fold_metrics)
 
 
 def cross_validate_neural(model_cls, hyperparams_base: dict,
                           X: np.ndarray, y: np.ndarray,
                           n_folds: int = 5, device: str = "cpu") -> dict:
-    """5-fold stratified cross-validation for a neural model."""
+    """5-fold stratified CV for a neural model."""
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
     fold_metrics = []
     for fold_idx, (train_idx, test_idx) in enumerate(skf.split(X, y)):
         X_tr, y_tr = X[train_idx], y[train_idx]
         X_te, y_te = X[test_idx], y[test_idx]
-        # Use 10% of train as validation for early stopping
-        split_point = int(len(X_tr) * 0.9)
-        X_train_fold, X_val_fold = X_tr[:split_point], X_tr[split_point:]
-        y_train_fold, y_val_fold = y_tr[:split_point], y_tr[split_point:]
+        split_pt = max(1, int(len(X_tr) * 0.9))
+        X_train_fold, X_val_fold = X_tr[:split_pt], X_tr[split_pt:]
+        y_train_fold, y_val_fold = y_tr[:split_pt], y_tr[split_pt:]
 
         hp = dict(hyperparams_base)
         hp["sequence_length"] = X.shape[1]
         hp["input_size"] = X.shape[2]
 
-        model = model_cls(hyperparams=hp)
-        model.device = torch.device(device)
-        model.model = model.model.to(model.device)
-        model.fit(X_train_fold, y_train_fold, X_val_fold, y_val_fold)
-
-        y_pred = model.predict(X_te)
-        y_proba = model.predict_proba(X_te)
-        fm = compute_metrics(y_te, y_pred, y_proba)
+        model = train_neural(model_cls, hp, X_train_fold, y_train_fold,
+                             X_val_fold, y_val_fold, device)
+        fm = eval_neural(model, X_te, y_te)
         fm["fold"] = fold_idx + 1
         fold_metrics.append(fm)
-        print(f"    Fold {fold_idx+1}: acc={fm['accuracy']:.4f}  f1={fm['f1']:.4f}  auc={fm.get('auc_roc', 0):.4f}")
+        auc = fm.get("auc_roc")
+        auc_str = f"{auc:.4f}" if auc is not None else "N/A"
+        print(f"    Fold {fold_idx+1}: acc={fm['accuracy']:.4f}  "
+              f"f1={fm['f1']:.4f}  auc={auc_str}")
+    return _aggregate_cv(fold_metrics)
 
+
+def _aggregate_cv(fold_metrics: list[dict]) -> dict:
     keys = ["accuracy", "f1", "precision", "recall", "auc_roc"]
     summary: dict = {}
     for k in keys:
-        vals = [fm[k] for fm in fold_metrics if k in fm]
+        vals = [fm[k] for fm in fold_metrics if k in fm and fm[k] is not None]
         if vals:
             summary[f"{k}_mean"] = float(np.mean(vals))
             summary[f"{k}_std"] = float(np.std(vals))
@@ -202,81 +231,19 @@ def cross_validate_neural(model_cls, hyperparams_base: dict,
 
 
 # ---------------------------------------------------------------------------
-# Temporal validation
-# ---------------------------------------------------------------------------
-
-def temporal_validation_rf(X: np.ndarray, y: np.ndarray, shot_ids: np.ndarray,
-                           split_point: int = 18000) -> dict:
-    """Train RF on early shots, test on later shots."""
-    early_mask = shot_ids < split_point
-    late_mask = ~early_mask
-    X_train, y_train = X[early_mask], y[early_mask]
-    X_test, y_test = X[late_mask], y[late_mask]
-
-    if len(X_train) < 10 or len(X_test) < 10:
-        return {"error": "Not enough samples for temporal split"}
-
-    rf = train_rf(X_train, y_train)
-    metrics = eval_rf(rf, X_test, y_test)
-    metrics["train_size"] = len(X_train)
-    metrics["test_size"] = len(X_test)
-    metrics["train_disruption_rate"] = float(y_train.mean())
-    metrics["test_disruption_rate"] = float(y_test.mean())
-    return metrics
-
-
-def temporal_validation_neural(model_cls, hyperparams_base: dict,
-                               X: np.ndarray, y: np.ndarray, shot_ids: np.ndarray,
-                               split_point: int = 18000, device: str = "cpu") -> dict:
-    """Train neural model on early shots, test on later shots."""
-    early_mask = shot_ids < split_point
-    late_mask = ~early_mask
-    X_train, y_train = X[early_mask], y[early_mask]
-    X_test, y_test = X[late_mask], y[late_mask]
-
-    if len(X_train) < 10 or len(X_test) < 10:
-        return {"error": "Not enough samples for temporal split"}
-
-    # 90/10 split within train for validation
-    split_pt = int(len(X_train) * 0.9)
-    X_tr, X_val = X_train[:split_pt], X_train[split_pt:]
-    y_tr, y_val = y_train[:split_pt], y_train[split_pt:]
-
-    hp = dict(hyperparams_base)
-    hp["sequence_length"] = X.shape[1]
-    hp["input_size"] = X.shape[2]
-
-    model = train_neural(model_cls, hp, X_tr, y_tr, X_val, y_val, device)
-    metrics = eval_neural(model, X_test, y_test)
-    metrics["train_size"] = len(X_train)
-    metrics["test_size"] = len(X_test)
-    metrics["train_disruption_rate"] = float(y_train.mean())
-    metrics["test_disruption_rate"] = float(y_test.mean())
-    return metrics
-
-
-# ---------------------------------------------------------------------------
-# Main experiment
+# Main
 # ---------------------------------------------------------------------------
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run full experiment suite")
-    parser.add_argument("--data", default="data/fair_mast_500.npz",
-                        help="Path to dataset (.npz with X, y, shot_ids)")
+    parser.add_argument("--data", default=None,
+                        help="Path to .npz file. Synthetic if missing.")
     parser.add_argument("--output", default="results/full_experiment.json",
-                        help="Path to save experiment results")
-    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"],
-                        help="Device for neural models")
+                        help="Path to save results JSON")
+    parser.add_argument("--device", default="auto",
+                        choices=["auto", "cpu", "cuda"])
     parser.add_argument("--quick", action="store_true",
-                        help="Quick mode: RF only, skip neural models")
-    parser.add_argument("--skip-cv", action="store_true",
-                        help="Skip cross-validation (faster)")
-    parser.add_argument("--skip-temporal", action="store_true",
-                        help="Skip temporal validation")
-    parser.add_argument("--split-point", type=int, default=18000,
-                        help="Shot ID boundary for temporal split")
-    parser.add_argument("--lstm-epochs", type=int, default=50)
-    parser.add_argument("--transformer-epochs", type=int, default=40)
+                        help="Smaller data, fewer epochs, fast run")
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args(argv)
 
@@ -284,24 +251,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> dict:
     args = parse_args(argv)
     np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    if _HAS_TORCH:
+        torch.manual_seed(args.seed)
 
     if args.device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = _neural_device()
     else:
         device = args.device
     print(f"Device: {device}")
+    print(f"Quick mode: {args.quick}")
+    if not _HAS_TORCH:
+        print("WARNING: torch not installed, neural models will be skipped.")
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
 
     # ---- Load data ----
-    data = np.load(args.data)
-    X, y = data["X"], data["y"]
-    shot_ids = data["shot_ids"] if "shot_ids" in data else None
-    print(f"Dataset: {X.shape[0]} shots, {X.shape[1]} timesteps, {X.shape[2]} features")
+    X, y, shot_ids = load_or_generate(args.data, quick=args.quick)
+    print(f"Dataset: {X.shape[0]} shots, {X.shape[1]} timesteps, "
+          f"{X.shape[2]} features")
     print(f"Labels: {int(y.sum())} disruptions ({y.mean()*100:.1f}%)")
 
-    # ---- Standard random split ----
+    # ---- Train/val/test split ----
     X_train, X_temp, y_train, y_temp = train_test_split(
         X, y, test_size=0.2, random_state=args.seed, stratify=y
     )
@@ -322,7 +292,14 @@ def main(argv: list[str] | None = None) -> dict:
         },
         "device": device,
         "seed": args.seed,
+        "quick_mode": args.quick,
     }
+
+    # Quick-mode params
+    lstm_epochs = 5 if args.quick else 50
+    tf_epochs = 5 if args.quick else 40
+    cv_folds = 3 if args.quick else 5
+    latency_runs = 20 if args.quick else 100
 
     # ==================================================================
     # 1. Random Forest
@@ -335,54 +312,58 @@ def main(argv: list[str] | None = None) -> dict:
     rf_model = train_rf(X_train, y_train)
     rf_train_time = time.time() - t0
     rf_metrics = eval_rf(rf_model, X_test, y_test)
-    rf_metrics["train_time_sec"] = rf_train_time
+    rf_metrics["train_time_sec"] = round(rf_train_time, 3)
     rf_latency = measure_latency(
-        lambda x: rf_model.predict(x.reshape(len(x), -1)), X_test
+        lambda x: rf_model.predict(x.reshape(len(x), -1)), X_test, n_runs=latency_runs
     )
     rf_metrics["latency"] = rf_latency
     print(f"  Accuracy: {rf_metrics['accuracy']:.4f}")
     print(f"  F1:       {rf_metrics['f1']:.4f}")
-    print(f"  AUC-ROC:  {rf_metrics.get('auc_roc', 0):.4f}")
-    print(f"  P99 latency: {rf_latency['p99_ms']:.2f} ms")
-
+    auc = rf_metrics.get("auc_roc")
+    print(f"  AUC-ROC:  {auc:.4f}" if auc is not None else "  AUC-ROC:  N/A")
+    print(f"  P99 latency: {rf_latency['p99_ms']:.2f} ms "
+          f"(target: <=5 ms {'PASS' if rf_latency['p99_ms'] <= 5 else 'FAIL'})")
     results["random_forest"] = rf_metrics
 
     # ==================================================================
     # 2. bi-LSTM+Attention
     # ==================================================================
-    if not args.quick:
+    if _HAS_TORCH:
         print("\n" + "=" * 60)
         print("2. bi-LSTM+ATTENTION")
         print("=" * 60)
 
         lstm_hp = {
             "input_size": X.shape[2],
-            "hidden_size": 128,
-            "num_layers": 2,
+            "hidden_size": 64 if args.quick else 128,
+            "num_layers": 1 if args.quick else 2,
             "bidirectional": True,
-            "dropout": 0.3,
-            "attention_heads": 4,
+            "dropout": 0.1 if args.quick else 0.3,
+            "attention_heads": 2 if args.quick else 4,
             "sequence_length": X.shape[1],
             "learning_rate": 1e-3,
             "batch_size": 32,
-            "epochs": args.lstm_epochs,
-            "early_stopping_patience": 10,
+            "epochs": lstm_epochs,
+            "early_stopping_patience": 3 if args.quick else 10,
             "weight_decay": 1e-4,
         }
 
         t0 = time.time()
-        lstm_model = train_neural(LSTMAttentionModel, lstm_hp, X_train, y_train, X_val, y_val, device)
+        lstm_model = train_neural(LSTMAttentionModel, lstm_hp,
+                                  X_train, y_train, X_val, y_val, device)
         lstm_train_time = time.time() - t0
         lstm_metrics = eval_neural(lstm_model, X_test, y_test)
-        lstm_metrics["train_time_sec"] = lstm_train_time
-        lstm_latency = measure_latency(lambda x: lstm_model.predict(x), X_test)
+        lstm_metrics["train_time_sec"] = round(lstm_train_time, 3)
+        lstm_latency = measure_latency(
+            lambda x: lstm_model.predict(x), X_test, n_runs=latency_runs
+        )
         lstm_metrics["latency"] = lstm_latency
-        lstm_metrics["hyperparams"] = lstm_hp
         print(f"  Accuracy: {lstm_metrics['accuracy']:.4f}")
         print(f"  F1:       {lstm_metrics['f1']:.4f}")
-        print(f"  AUC-ROC:  {lstm_metrics.get('auc_roc', 0):.4f}")
-        print(f"  P99 latency: {lstm_latency['p99_ms']:.2f} ms")
-
+        auc = lstm_metrics.get("auc_roc")
+        print(f"  AUC-ROC:  {auc:.4f}" if auc is not None else "  AUC-ROC:  N/A")
+        print(f"  P99 latency: {lstm_latency['p99_ms']:.2f} ms "
+              f"(target: <=30 ms {'PASS' if lstm_latency['p99_ms'] <= 30 else 'FAIL'})")
         results["lstm_attention"] = lstm_metrics
 
         # ==============================================================
@@ -392,134 +373,128 @@ def main(argv: list[str] | None = None) -> dict:
         print("3. AUTOREGRESSIVE TRANSFORMER")
         print("=" * 60)
 
-        transformer_hp = {
+        tf_hp = {
             "input_size": X.shape[2],
-            "d_model": 128,
-            "num_heads": 8,
-            "num_layers": 4,
-            "dim_feedforward": 512,
+            "d_model": 64 if args.quick else 128,
+            "num_heads": 4 if args.quick else 8,
+            "num_layers": 2 if args.quick else 4,
+            "dim_feedforward": 128 if args.quick else 512,
             "dropout": 0.1,
             "sequence_length": X.shape[1],
             "learning_rate": 5e-4,
-            "warmup_steps": 1000,
+            "warmup_steps": 50 if args.quick else 1000,
             "batch_size": 16,
-            "epochs": args.transformer_epochs,
-            "early_stopping_patience": 8,
+            "epochs": tf_epochs,
+            "early_stopping_patience": 3 if args.quick else 8,
             "weight_decay": 1e-4,
         }
 
         t0 = time.time()
-        tf_model = train_neural(TransformerModel, transformer_hp, X_train, y_train, X_val, y_val, device)
+        tf_model = train_neural(TransformerModel, tf_hp,
+                                X_train, y_train, X_val, y_val, device)
         tf_train_time = time.time() - t0
         tf_metrics = eval_neural(tf_model, X_test, y_test)
-        tf_metrics["train_time_sec"] = tf_train_time
-        tf_latency = measure_latency(lambda x: tf_model.predict(x), X_test)
+        tf_metrics["train_time_sec"] = round(tf_train_time, 3)
+        tf_latency = measure_latency(
+            lambda x: tf_model.predict(x), X_test, n_runs=latency_runs
+        )
         tf_metrics["latency"] = tf_latency
-        tf_metrics["hyperparams"] = transformer_hp
         print(f"  Accuracy: {tf_metrics['accuracy']:.4f}")
         print(f"  F1:       {tf_metrics['f1']:.4f}")
-        print(f"  AUC-ROC:  {tf_metrics.get('auc_roc', 0):.4f}")
+        auc = tf_metrics.get("auc_roc")
+        print(f"  AUC-ROC:  {auc:.4f}" if auc is not None else "  AUC-ROC:  N/A")
         print(f"  P99 latency: {tf_latency['p99_ms']:.2f} ms")
-
         results["transformer"] = tf_metrics
 
     # ==================================================================
-    # 4. Cross-validation
+    # 4. 5-fold Cross-validation
     # ==================================================================
-    if not args.skip_cv:
-        print("\n" + "=" * 60)
-        print("4. 5-FOLD CROSS-VALIDATION")
-        print("=" * 60)
+    print("\n" + "=" * 60)
+    print(f"4. {cv_folds}-FOLD CROSS-VALIDATION")
+    print("=" * 60)
 
-        print("  RF cross-validation:")
-        cv_rf = cross_validate_rf(X, y, n_folds=5)
-        print(f"    Mean accuracy: {cv_rf['accuracy_mean']:.4f} +/- {cv_rf['accuracy_std']:.4f}")
-        print(f"    Mean AUC-ROC:  {cv_rf.get('auc_roc_mean', 0):.4f} +/- {cv_rf.get('auc_roc_std', 0):.4f}")
-        results["cross_validation_rf"] = cv_rf
+    print("  RF cross-validation:")
+    cv_rf = cross_validate_rf(X, y, n_folds=cv_folds)
+    print(f"    Mean accuracy: {cv_rf['accuracy_mean']:.4f} "
+          f"+/- {cv_rf['accuracy_std']:.4f}")
+    auc_mean = cv_rf.get("auc_roc_mean")
+    if auc_mean is not None:
+        print(f"    Mean AUC-ROC:  {auc_mean:.4f} "
+              f"+/- {cv_rf.get('auc_roc_std', 0):.4f}")
+    results["cross_validation_rf"] = cv_rf
 
-        if not args.quick:
-            print("\n  LSTM cross-validation:")
-            lstm_cv_hp = {
-                "hidden_size": 128, "num_layers": 2, "bidirectional": True,
-                "dropout": 0.3, "attention_heads": 4, "learning_rate": 1e-3,
-                "batch_size": 32, "epochs": max(10, args.lstm_epochs // 3),
-                "early_stopping_patience": 5, "weight_decay": 1e-4,
-            }
-            cv_lstm = cross_validate_neural(LSTMAttentionModel, lstm_cv_hp, X, y, n_folds=5, device=device)
-            print(f"    Mean accuracy: {cv_lstm['accuracy_mean']:.4f} +/- {cv_lstm['accuracy_std']:.4f}")
-            results["cross_validation_lstm"] = cv_lstm
+    if _HAS_TORCH:
+        print("\n  LSTM cross-validation:")
+        lstm_cv_hp = {
+            "hidden_size": 64 if args.quick else 128,
+            "num_layers": 1 if args.quick else 2,
+            "bidirectional": True,
+            "dropout": 0.1 if args.quick else 0.3,
+            "attention_heads": 2 if args.quick else 4,
+            "learning_rate": 1e-3,
+            "batch_size": 32,
+            "epochs": max(3, lstm_epochs // 3),
+            "early_stopping_patience": 3,
+            "weight_decay": 1e-4,
+        }
+        cv_lstm = cross_validate_neural(
+            LSTMAttentionModel, lstm_cv_hp, X, y, n_folds=cv_folds, device=device
+        )
+        print(f"    Mean accuracy: {cv_lstm['accuracy_mean']:.4f} "
+              f"+/- {cv_lstm['accuracy_std']:.4f}")
+        results["cross_validation_lstm"] = cv_lstm
 
-            print("\n  Transformer cross-validation:")
-            tf_cv_hp = {
-                "d_model": 128, "num_heads": 8, "num_layers": 4,
-                "dim_feedforward": 512, "dropout": 0.1, "learning_rate": 5e-4,
-                "warmup_steps": 500, "batch_size": 16,
-                "epochs": max(10, args.transformer_epochs // 3),
-                "early_stopping_patience": 5, "weight_decay": 1e-4,
-            }
-            cv_tf = cross_validate_neural(TransformerModel, tf_cv_hp, X, y, n_folds=5, device=device)
-            print(f"    Mean accuracy: {cv_tf['accuracy_mean']:.4f} +/- {cv_tf['accuracy_std']:.4f}")
-            results["cross_validation_transformer"] = cv_tf
-
-    # ==================================================================
-    # 5. Temporal validation
-    # ==================================================================
-    if not args.skip_temporal and shot_ids is not None:
-        print("\n" + "=" * 60)
-        print("5. TEMPORAL VALIDATION")
-        print("=" * 60)
-
-        print(f"  Split point: shot {args.split_point}")
-        early_count = int((shot_ids < args.split_point).sum())
-        late_count = int((shot_ids >= args.split_point).sum())
-        print(f"  Early (train): {early_count} shots, Late (test): {late_count} shots")
-
-        print("\n  RF temporal validation:")
-        tv_rf = temporal_validation_rf(X, y, shot_ids, args.split_point)
-        if "error" not in tv_rf:
-            print(f"    Accuracy: {tv_rf['accuracy']:.4f}  F1: {tv_rf['f1']:.4f}  AUC: {tv_rf.get('auc_roc', 0):.4f}")
-        else:
-            print(f"    {tv_rf['error']}")
-        results["temporal_validation_rf"] = tv_rf
-
-        if not args.quick:
-            print("\n  LSTM temporal validation:")
-            tv_lstm = temporal_validation_neural(
-                LSTMAttentionModel, lstm_cv_hp, X, y, shot_ids, args.split_point, device
-            )
-            if "error" not in tv_lstm:
-                print(f"    Accuracy: {tv_lstm['accuracy']:.4f}  F1: {tv_lstm['f1']:.4f}  AUC: {tv_lstm.get('auc_roc', 0):.4f}")
-            else:
-                print(f"    {tv_lstm['error']}")
-            results["temporal_validation_lstm"] = tv_lstm
-
-            print("\n  Transformer temporal validation:")
-            tv_tf = temporal_validation_neural(
-                TransformerModel, tf_cv_hp, X, y, shot_ids, args.split_point, device
-            )
-            if "error" not in tv_tf:
-                print(f"    Accuracy: {tv_tf['accuracy']:.4f}  F1: {tv_tf['f1']:.4f}  AUC: {tv_tf.get('auc_roc', 0):.4f}")
-            else:
-                print(f"    {tv_tf['error']}")
-            results["temporal_validation_transformer"] = tv_tf
-    elif shot_ids is None:
-        print("\nSkipping temporal validation: no shot_ids in dataset")
+        print("\n  Transformer cross-validation:")
+        tf_cv_hp = {
+            "d_model": 64 if args.quick else 128,
+            "num_heads": 4 if args.quick else 8,
+            "num_layers": 2 if args.quick else 4,
+            "dim_feedforward": 128 if args.quick else 512,
+            "dropout": 0.1,
+            "learning_rate": 5e-4,
+            "warmup_steps": 50 if args.quick else 500,
+            "batch_size": 16,
+            "epochs": max(3, tf_epochs // 3),
+            "early_stopping_patience": 3,
+            "weight_decay": 1e-4,
+        }
+        cv_tf = cross_validate_neural(
+            TransformerModel, tf_cv_hp, X, y, n_folds=cv_folds, device=device
+        )
+        print(f"    Mean accuracy: {cv_tf['accuracy_mean']:.4f} "
+              f"+/- {cv_tf['accuracy_std']:.4f}")
+        results["cross_validation_transformer"] = cv_tf
 
     # ==================================================================
     # Summary table
     # ==================================================================
-    print("\n" + "=" * 70)
-    print(f"{'Model':<20} {'Accuracy':>10} {'F1':>8} {'AUC-ROC':>10} {'P99 (ms)':>10}")
-    print("=" * 70)
+    print("\n" + "=" * 72)
+    print(f"{'Model':<22} {'Accuracy':>10} {'F1':>8} {'AUC-ROC':>10} "
+          f"{'P99 (ms)':>10} {'Latency':>8}")
+    print("=" * 72)
 
+    latency_targets = {
+        "random_forest": 5.0,
+        "lstm_attention": 30.0,
+        "transformer": None,
+    }
     for name, key in [("Random Forest", "random_forest"),
                       ("bi-LSTM+Att", "lstm_attention"),
                       ("Transformer", "transformer")]:
-        if key in results:
-            m = results[key]
-            lat = m.get("latency", {}).get("p99_ms", 0)
-            print(f"{name:<20} {m['accuracy']:>10.4f} {m['f1']:>8.4f} {m.get('auc_roc', 0):>10.4f} {lat:>10.2f}")
-    print("=" * 70)
+        if key not in results:
+            continue
+        m = results[key]
+        lat = m.get("latency", {}).get("p99_ms", 0)
+        target = latency_targets.get(key)
+        if target is not None:
+            status = "PASS" if lat <= target else "FAIL"
+        else:
+            status = "---"
+        auc = m.get("auc_roc")
+        auc_str = f"{auc:>10.4f}" if auc is not None else f"{'N/A':>10}"
+        print(f"{name:<22} {m['accuracy']:>10.4f} {m['f1']:>8.4f} "
+              f"{auc_str} {lat:>10.2f} {status:>8}")
+    print("=" * 72)
 
     # ---- Save ----
     with open(args.output, "w") as f:

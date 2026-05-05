@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Plot from 'react-plotly.js';
 import api from '../api/client';
 import ShotLoader from '../components/ShotLoader';
-import type { Experiment } from '../types';
+import type { Experiment, MLModel } from '../types';
 
 export default function DashboardPage() {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [models, setModels] = useState<MLModel[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -15,6 +17,11 @@ export default function DashboardPage() {
       .then((res) => setExperiments(res.data.experiments))
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    api
+      .get('/models/')
+      .then((res) => setModels(res.data))
+      .catch(() => {});
   }, []);
 
   const handleLoaded = (exp: Experiment) => {
@@ -68,6 +75,73 @@ export default function DashboardPage() {
       </div>
 
       <ShotLoader onLoaded={handleLoaded} />
+
+      {/* Model Comparison */}
+      {models.length > 0 && (
+        <div className="card mb-lg">
+          <div className="card-header">
+            <h3>Сравнение моделей</h3>
+          </div>
+
+          <table className="table" style={{ marginBottom: 20 }}>
+            <thead>
+              <tr>
+                <th>Модель</th>
+                <th>Тип</th>
+                <th>Accuracy</th>
+                <th>F1</th>
+                <th>AUC</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {models.map((m) => (
+                <tr key={m.id}>
+                  <td className="font-semibold">{m.name}</td>
+                  <td>
+                    <span className="badge badge-info">{m.model_type}</span>
+                  </td>
+                  <td>{m.metrics_json?.accuracy != null ? m.metrics_json.accuracy.toFixed(4) : '\u2014'}</td>
+                  <td>{m.metrics_json?.f1 != null ? m.metrics_json.f1.toFixed(4) : '\u2014'}</td>
+                  <td>{m.metrics_json?.auc != null ? m.metrics_json.auc.toFixed(4) : '\u2014'}</td>
+                  <td>
+                    <span className={`badge ${m.is_active ? 'badge-success' : 'badge-neutral'}`}>
+                      {m.is_active ? 'Активна' : 'Неактивна'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* AUC bar chart */}
+          {models.some((m) => m.metrics_json?.auc != null) && (
+            <Plot
+              data={[
+                {
+                  x: models.filter((m) => m.metrics_json?.auc != null).map((m) => m.name),
+                  y: models.filter((m) => m.metrics_json?.auc != null).map((m) => m.metrics_json!.auc),
+                  type: 'bar',
+                  marker: {
+                    color: models
+                      .filter((m) => m.metrics_json?.auc != null)
+                      .map((m) => (m.is_active ? '#2ecc71' : '#3498db')),
+                  },
+                  hovertemplate: '%{x}<br>AUC: %{y:.4f}<extra></extra>',
+                },
+              ]}
+              layout={{
+                title: 'Сравнение AUC моделей',
+                yaxis: { title: 'AUC', range: [0, 1] },
+                height: 350,
+                margin: { l: 60, r: 30, t: 50, b: 80 },
+              }}
+              config={{ responsive: true, displayModeBar: false }}
+              style={{ width: '100%' }}
+            />
+          )}
+        </div>
+      )}
 
       <div className="card">
         <div className="card-header">

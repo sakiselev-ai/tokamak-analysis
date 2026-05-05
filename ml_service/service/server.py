@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from service.metrics import CONTENT_TYPE_LATEST, ML_INFERENCE_DURATION, ML_TRAINING_DURATION, generate_latest
 
 from service.data.dataset import get_sample_dataset
-from service.data.fair_mast_loader import load_shots
+from service.data.fair_mast_loader import load_disruption_labels, load_shots, make_disruption_labels
 from service.data.metrics import compute_metrics, format_confusion_matrix
 from service.data.preprocessing import prepare_batch, prepare_features
 from service.training.trainer import create_model, load_model
@@ -128,7 +128,7 @@ async def train(request: TrainRequest):
 
         if request.shot_ids:
             # Load real data from FAIR-MAST
-            shots_data = load_shots(request.shot_ids)
+            shots_data, loaded_ids = load_shots(request.shot_ids)
             if not shots_data:
                 raise HTTPException(
                     status_code=404,
@@ -138,9 +138,15 @@ async def train(request: TrainRequest):
                 [{"signals": s} for s in shots_data],
                 sequence_length=seq_len,
             )
-            # Derive labels: use last-column energy as a proxy for disruption
-            energy = np.mean(X ** 2, axis=(1, 2))
-            y = (energy > np.median(energy)).astype(np.float32)
+            # Load real disruption labels from FAIR-MAST
+            disruption_times = load_disruption_labels(loaded_ids)
+            y = make_disruption_labels(loaded_ids, disruption_times)
+
+            logger.info(
+                "disruption_labels_loaded",
+                n_disrupted=int(y.sum()),
+                n_stable=int(len(y) - y.sum()),
+            )
 
             from service.data.dataset import build_dataset
             dataset = build_dataset(X, y)

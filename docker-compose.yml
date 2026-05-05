@@ -10,6 +10,12 @@ services:
     depends_on:
       - backend
       - frontend
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
     networks:
       - frontend
     deploy:
@@ -22,6 +28,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     networks:
       - frontend
     deploy:
@@ -42,6 +49,12 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
     networks:
       - frontend
       - backend
@@ -60,6 +73,12 @@ services:
     env_file: .env
     depends_on:
       - minio
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
     networks:
       - backend
       - monitoring
@@ -78,6 +97,13 @@ services:
     depends_on:
       - redis
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.tasks.training inspect ping --timeout 10 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+    restart: unless-stopped
+    stop_grace_period: 30s
     networks:
       - backend
       - db
@@ -89,6 +115,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-tokamak}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
@@ -110,6 +137,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
@@ -128,6 +156,7 @@ services:
 
   minio:
     image: minio/minio:latest
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
@@ -160,6 +189,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -177,6 +207,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    restart: unless-stopped
     ports:
       - "3001:3000"
     environment:
@@ -197,6 +228,7 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
+    restart: unless-stopped
     ports:
       - "9093:9093"
     volumes:
@@ -212,6 +244,7 @@ services:
   telegram-bot:
     build:
       context: ./monitoring/telegram-bot
+    restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}

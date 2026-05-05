@@ -11,7 +11,7 @@ route:
 receivers:
   - name: 'telegram'
     webhook_configs:
-      - url: 'http://telegram-bot:8080/alert'
+      - url: 'http://telegram-bot:5000/alert'
         send_resolved: true
 
 inhibit_rules:

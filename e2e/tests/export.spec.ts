@@ -1,82 +1,65 @@
 import { test, expect } from '@playwright/test';
-import { loginAsUser, getToken } from './helpers';
+import { loginAsUser, getToken, ensureExperimentAndOpen } from './helpers';
 
 test.describe('Export', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsUser(page);
   });
 
-  /**
-   * Helper: ensure at least one experiment is loaded and navigate to its page.
-   * Returns the numeric experiment id extracted from the URL.
-   */
-  async function navigateToExperiment(page: import('@playwright/test').Page): Promise<string> {
-    await page.goto('/');
-
-    const openBtn = page.locator('button:has-text("Открыть")').first();
-
-    if (!(await openBtn.isVisible({ timeout: 3000 }).catch(() => false))) {
-      await page.fill('input[type="number"]', '30420');
-      await page.click('text=Загрузить');
-      await expect(page.locator('button:has-text("Открыть")').first()).toBeVisible({
-        timeout: 90000,
-      });
-    }
-
-    await page.locator('button:has-text("Открыть")').first().click();
-
-    // Wait for experiment page
-    await expect(page.locator('.js-plotly-plot')).toBeVisible({ timeout: 15000 });
-
-    // Extract experiment id from URL  /experiment/:id
-    const url = page.url();
-    const match = url.match(/\/experiment\/(\d+)/);
-    expect(match).toBeTruthy();
-    return match![1];
-  }
-
   // -------------------------------------------------------------------
-  // TC-008: Export experiment data as CSV and JSON
+  // Export experiment data as CSV
   // -------------------------------------------------------------------
-  test('TC-008: Export CSV', async ({ page }) => {
-    const experimentId = await navigateToExperiment(page);
-
-    // The export links are plain <a> tags pointing to the API.
-    // We verify that the CSV export endpoint responds with 200 and correct content type.
+  test('export CSV returns valid response', async ({ page }) => {
+    const experimentId = await ensureExperimentAndOpen(page);
     const token = await getToken(page);
 
     const csvResponse = await page.request.get(
       `/api/v1/experiments/${experimentId}/export?format=csv`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
+
     expect(csvResponse.status()).toBe(200);
 
-    const csvContentType = csvResponse.headers()['content-type'] || '';
+    const contentType = csvResponse.headers()['content-type'] || '';
     expect(
-      csvContentType.includes('text/csv') || csvContentType.includes('application/octet-stream'),
+      contentType.includes('text/csv') || contentType.includes('application/octet-stream'),
     ).toBeTruthy();
 
-    // Verify the body is non-empty
-    const csvBody = await csvResponse.text();
-    expect(csvBody.length).toBeGreaterThan(0);
+    const body = await csvResponse.text();
+    expect(body.length).toBeGreaterThan(0);
+    // CSV should contain a header row with comma-separated columns
+    expect(body).toContain(',');
   });
 
-  test('TC-008: Export JSON', async ({ page }) => {
-    const experimentId = await navigateToExperiment(page);
-
+  // -------------------------------------------------------------------
+  // Export experiment data as JSON
+  // -------------------------------------------------------------------
+  test('export JSON returns valid response', async ({ page }) => {
+    const experimentId = await ensureExperimentAndOpen(page);
     const token = await getToken(page);
 
     const jsonResponse = await page.request.get(
       `/api/v1/experiments/${experimentId}/export?format=json`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
+
     expect(jsonResponse.status()).toBe(200);
 
-    const jsonContentType = jsonResponse.headers()['content-type'] || '';
-    expect(jsonContentType.includes('application/json')).toBeTruthy();
+    const contentType = jsonResponse.headers()['content-type'] || '';
+    expect(contentType.includes('application/json')).toBeTruthy();
 
-    // Verify the body parses as valid JSON and is non-empty
     const jsonBody = await jsonResponse.json();
     expect(jsonBody).toBeTruthy();
+  });
+
+  // -------------------------------------------------------------------
+  // Export links are present on the experiment page
+  // -------------------------------------------------------------------
+  test('experiment page shows CSV and JSON export links', async ({ page }) => {
+    await ensureExperimentAndOpen(page);
+
+    // The export section should contain buttons for CSV and JSON
+    await expect(page.locator('button:has-text("CSV")')).toBeVisible();
+    await expect(page.locator('button:has-text("JSON")')).toBeVisible();
   });
 });
