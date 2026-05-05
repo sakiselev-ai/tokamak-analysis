@@ -15,3 +15,5 @@ prometheus_client==0.21.0
 pytest==8.3.3
 pytest-cov==5.0.0
 ruff==0.6.8
+s3fs==2024.9.0
+zarr==2.18.3
