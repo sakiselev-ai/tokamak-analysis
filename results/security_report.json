@@ -1,0 +1,110 @@
+{
+  "scan_date": "2026-05-05 11:22:41",
+  "host": "http://186.246.31.81",
+  "summary": {
+    "total_checks": 16,
+    "passed": 15,
+    "failed": 1,
+    "critical_failures": 0,
+    "high_failures": 0,
+    "compliance": "PASS"
+  },
+  "results": [
+    {
+      "test": "SQL Injection (login)",
+      "severity": "CRITICAL",
+      "status": "pass",
+      "detail": "All payloads rejected"
+    },
+    {
+      "test": "SQL Injection (experiments)",
+      "severity": "CRITICAL",
+      "status": "pass",
+      "detail": "Rejected with 422"
+    },
+    {
+      "test": "XSS (stored)",
+      "severity": "HIGH",
+      "status": "pass",
+      "detail": "Input stored but React escapes output"
+    },
+    {
+      "test": "IDOR (experiment)",
+      "severity": "HIGH",
+      "status": "pass",
+      "detail": "Properly returns 404"
+    },
+    {
+      "test": "IDOR (admin)",
+      "severity": "CRITICAL",
+      "status": "pass",
+      "detail": "Admin endpoint returns 403"
+    },
+    {
+      "test": "JWT (invalid token)",
+      "severity": "CRITICAL",
+      "status": "pass",
+      "detail": "Rejected with 401"
+    },
+    {
+      "test": "JWT (payload tampering)",
+      "severity": "CRITICAL",
+      "status": "pass",
+      "detail": "Signature validation works"
+    },
+    {
+      "test": "JWT (expired)",
+      "severity": "HIGH",
+      "status": "pass",
+      "detail": "Expired JWT rejected"
+    },
+    {
+      "test": "Header: HSTS",
+      "severity": "HIGH",
+      "status": "pass",
+      "detail": "Strict-Transport-Security present"
+    },
+    {
+      "test": "Header: X-Content-Type-Options",
+      "severity": "MEDIUM",
+      "status": "pass",
+      "detail": "X-Content-Type-Options present"
+    },
+    {
+      "test": "Header: X-Frame-Options",
+      "severity": "MEDIUM",
+      "status": "pass",
+      "detail": "X-Frame-Options present"
+    },
+    {
+      "test": "Header: CSP",
+      "severity": "MEDIUM",
+      "status": "pass",
+      "detail": "Content-Security-Policy present"
+    },
+    {
+      "test": "Rate limiting",
+      "severity": "MEDIUM",
+      "status": "fail",
+      "detail": "No rate limiting detected (110 requests succeeded)"
+    },
+    {
+      "test": "Brute force protection",
+      "severity": "HIGH",
+      "status": "pass",
+      "detail": "Rate limiting should catch this (status: 401)"
+    },
+    {
+      "test": "Password exposure",
+      "severity": "CRITICAL",
+      "status": "pass",
+      "detail": "Password not exposed in API"
+    },
+    {
+      "test": "Error info leakage",
+      "severity": "MEDIUM",
+      "status": "pass",
+      "detail": "No internal details in errors"
+    }
+  ]
+}
