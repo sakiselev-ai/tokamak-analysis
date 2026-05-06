@@ -20,18 +20,18 @@ BUCKET = "mast"
 def list_available_shots(limit=200):
     """List available shot IDs from FAIR-MAST."""
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs={"endpoint_url": S3_ENDPOINT})
-    items = s3.ls(f"{BUCKET}/shots")
+    items = s3.ls(f"{BUCKET}/level1/shots")
     shot_ids = []
     for item in items[:limit*2]:
         try:
-            shot_ids.append(int(item.split("/")[-1]))
+            shot_ids.append(int(item.split("/")[-1].replace(".zarr", "")))
         except ValueError:
             continue
     return sorted(shot_ids)[:limit]
 
 def load_shot_signals(shot_id, s3):
     """Load all signals for a shot, return dict of signal_name -> (timestamps, values)."""
-    shot_path = f"{BUCKET}/shots/{shot_id}"
+    shot_path = f"{BUCKET}/level1/shots/{shot_id}.zarr"
     signals = {}
     try:
         items = s3.ls(shot_path)

@@ -49,7 +49,7 @@ class FairMastClient:
         Returns dict mapping signal_name -> {timestamps, values, units, description}.
         """
         signals = {}
-        shot_path = f"{self.bucket}/shots/{shot_id}"
+        shot_path = f"{self.bucket}/level1/shots/{shot_id}.zarr"
 
         logger.info("loading_shot", shot_id=shot_id, path=shot_path)
 
@@ -96,12 +96,12 @@ class FairMastClient:
     async def list_shots(self, limit: int = 100) -> list[int]:
         """List available shot IDs."""
         try:
-            shots_path = f"{self.bucket}/shots"
+            shots_path = f"{self.bucket}/level1/shots"
             items = self.s3.ls(shots_path)
             shot_ids = []
             for item in items[:limit]:
                 try:
-                    shot_ids.append(int(item.split("/")[-1]))
+                    shot_ids.append(int(item.split("/")[-1].replace(".zarr", "")))
                 except ValueError:
                     continue
             return sorted(shot_ids)

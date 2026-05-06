@@ -94,7 +94,7 @@ def load_shot(shot_id: int) -> dict[str, dict]:
         import zarr
 
         fs = _get_filesystem()
-        shot_path = f"{FAIR_MAST_BUCKET}/{shot_id}"
+        shot_path = f"{FAIR_MAST_BUCKET}/level1/shots/{shot_id}.zarr"
 
         if not fs.exists(shot_path):
             raise FileNotFoundError(f"Shot {shot_id} not found in FAIR-MAST archive")
@@ -154,7 +154,7 @@ def load_disruption_labels(shot_ids: list[int]) -> dict[int, float | None]:
         fs = _get_filesystem()
         for sid in shot_ids:
             try:
-                shot_path = f"{FAIR_MAST_BUCKET}/{sid}"
+                shot_path = f"{FAIR_MAST_BUCKET}/level1/shots/{sid}.zarr"
                 if not fs.exists(shot_path):
                     logger.warning("shot_not_found_for_label", shot_id=sid)
                     result[sid] = None
