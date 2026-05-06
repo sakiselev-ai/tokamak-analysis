@@ -28,7 +28,7 @@ and disruption prediction.
 - **Frontend**: http://186.246.31.81/
 - **API docs**: http://186.246.31.81/docs
 - **Grafana**: http://186.246.31.81:3001/
-- **DB**: 5 users, 5 models registered, 3 experiments (shots 11700, 11750, 30420), 4 predictions, 1 completed training run
+- **DB**: 5 users, 5 models, 3 experiments (shots 11700, 11750, 30420), 4+ predictions, 5 training runs (1 completed RF, 4 failed LSTM/Transformer)
 - **Trained models on disk**: `rf_baseline.joblib`, `lstm_attention.pt`, `transformer.pt` + 7 checkpoints
 - **Backups**: cron daily at 3:00 → pg_dump + encrypt + MinIO
 - **Not a git repo on VPS** — sync via `rsync` or `scp`, then `docker compose build`
@@ -123,6 +123,8 @@ ml_service/scripts/
 ├── full_experiment.py       # 3/5-fold CV + latency benchmark for all models
 ├── generate_paper_tables.py # LaTeX tables (RU/EN) for preprint
 ├── benchmark_models.py      # Model inference benchmarks
+├── retrain_models.py        # Retrain all 3 models with n_features=10, save to models/
+├── warmup_models.py         # Verify model loading (container startup check)
 └── train_*.py               # Individual model training scripts
 
 frontend/src/
@@ -195,8 +197,8 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 ## Project Metrics
 
-- **16 commits** on main branch
-- **188 files**, **~20,600 LOC total**
+- **18 commits** on main branch
+- **190 files**, **~21,000 LOC total**
 - **85 Python files** (~9,000 LOC), **29 TypeScript files** (~3,100 LOC)
 - **Infrastructure**: ~1,100 LOC (YAML/JSON/conf)
 - **Documentation**: ~7,400 LOC (MD/TeX/bib/HTML)
@@ -290,10 +292,15 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - `PredictRequest.model_path` is optional — ML service falls back to default models or trains on-the-fly
 - `prepare_features` defaults to `max_features=10` to match trained models on VPS
 - Trained models on VPS expect 10 features; dataset has 20 features (padded from varied shapes)
+- Predict endpoints flatten features to 2D for RF (`features.reshape(n, -1)`) — RF needs flat input, neural models need 3D
+- Train endpoint defaults `input_size=10` and injects it into LSTM/Transformer hyperparams before model creation
+- `retrain_models.py` retrains all 3 models with consistent n_features=10, saves to `models/`
+- After `docker compose build`, run `retrain_models.py` inside container (COPY bakes in old host models)
+- **Actual ML inference: ~19ms** — the 6s total latency is `prepare_features` interpolating 229 raw signals, not the model
 
 ## Known Limitations
 
-- **Inference cold start ~6s**: First predict call trains synthetic model if saved model has wrong feature count. Subsequent calls are cached.
+- **Data preprocessing ~6s per shot**: `prepare_features` interpolates up to 229 signals from FAIR-MAST. Optimization: pre-cache features or limit signal count in backend
 - **LSTM quick-mode AUC 0.867**: Needs full training (50 epochs) for production-quality results
 - **RF/Transformer P99 > 50ms target**: Need model optimization or reduced n_estimators/sequence_length
 - **Class imbalance 86.8%**: Heuristic labels skew disruption-heavy; real `cpf/disruption_time` labels preferred
