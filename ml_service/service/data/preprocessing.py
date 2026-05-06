@@ -4,19 +4,19 @@ import numpy as np
 from scipy import interpolate
 
 
-def prepare_features(signals: dict[str, dict], sequence_length: int = 200) -> np.ndarray:
+def prepare_features(signals: dict[str, dict], sequence_length: int = 200, max_features: int = 10) -> np.ndarray:
     """Convert raw signal data into feature matrix for ML models.
 
     Args:
         signals: dict mapping signal_name -> {timestamps, values}
         sequence_length: target number of time steps
+        max_features: maximum number of signal features (pad/truncate)
 
     Returns:
-        np.ndarray of shape (1, sequence_length, num_signals) for single shot,
-        or (num_shots, sequence_length, num_signals) for batch.
+        np.ndarray of shape (1, sequence_length, max_features).
     """
-    signal_names = sorted(signals.keys())
-    num_signals = len(signal_names)
+    signal_names = sorted(signals.keys())[:max_features]
+    num_signals = max_features
 
     features = np.zeros((sequence_length, num_signals))
 
