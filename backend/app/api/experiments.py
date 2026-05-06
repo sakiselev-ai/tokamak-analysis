@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import noload, selectinload
 
 from app.core.audit import log_action
 from app.core.security import get_current_user
@@ -176,7 +176,7 @@ async def list_experiments(
 ):
     query = (
         select(Experiment)
-        .options(selectinload(Experiment.timeseries))
+        .options(noload(Experiment.timeseries))
         .where(Experiment.user_id == current_user.id)
         .order_by(Experiment.loaded_at.desc())
         .offset(skip)
