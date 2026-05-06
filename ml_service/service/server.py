@@ -59,6 +59,10 @@ async def classify(request: PredictRequest):
         # Load or get cached model
         model = _get_model(request.model_type, request.model_path)
 
+        # RF expects 2D (n_samples, n_features_flat), neural models expect 3D (n, seq, feat)
+        if request.model_type == "random_forest":
+            features = features.reshape(features.shape[0], -1)
+
         start = time.perf_counter()
         prediction = model.predict(features)
         proba = model.predict_proba(features)
@@ -84,6 +88,9 @@ async def predict_disruption(request: PredictRequest):
     try:
         features = prepare_features(request.data.get("signals", {}))
         model = _get_model(request.model_type, request.model_path)
+
+        if request.model_type == "random_forest":
+            features = features.reshape(features.shape[0], -1)
 
         start = time.perf_counter()
         proba = model.predict_proba(features)
@@ -121,10 +128,15 @@ async def train(request: TrainRequest):
     try:
         logger.info("training_started", model_type=request.model_type, task=request.task)
 
-        model = create_model(request.model_type, request.hyperparameters or None)
-
         seq_len = request.hyperparameters.get("sequence_length", 200)
-        n_features = request.hyperparameters.get("input_size", 39)
+        n_features = request.hyperparameters.get("input_size", 10)
+
+        # Ensure input_size in hyperparameters matches n_features for neural models
+        hp = dict(request.hyperparameters) if request.hyperparameters else {}
+        if request.model_type in ("lstm_attention", "transformer"):
+            hp["input_size"] = n_features
+
+        model = create_model(request.model_type, hp or None)
 
         if request.shot_ids:
             # Load real data from FAIR-MAST
@@ -229,8 +241,8 @@ def _get_model(model_type: str, model_path: str | None):
             else:
                 # Train a quick model on synthetic data as last resort
                 logger.warning("model_not_found_training_synthetic", model_type=model_type)
-                dataset = get_sample_dataset(n_samples=100, seq_len=200, n_features=20, task="classification")
-                model = create_model(model_type)
+                dataset = get_sample_dataset(n_samples=100, seq_len=200, n_features=10, task="classification")
+                model = create_model(model_type, {"input_size": 10})
                 if model_type == "random_forest":
                     X_tr, y_tr = dataset.flat_train()
                     model.fit(X_tr, y_tr)
