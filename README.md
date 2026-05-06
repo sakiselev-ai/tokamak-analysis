@@ -1,6 +1,6 @@
 # Tokamak Analysis — ИИ-система для анализа экспериментальных данных токамаков
 
-[![CI](https://github.com/mephi-tokamak/tokamak-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/mephi-tokamak/tokamak-analysis/actions/workflows/ci.yml)
+[![CI](https://github.com/sakiselev-ai/tokamak-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/sakiselev-ai/tokamak-analysis/actions/workflows/ci.yml)
 
 НИЯУ МИФИ | Версия 1.0 | 2026
 
