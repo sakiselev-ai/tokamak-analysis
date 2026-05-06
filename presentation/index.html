@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ИИ-система анализа данных токамаков — НИЯУ МИФИ</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    color: #1a1a2e;
+    background: #f5f5f5;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ===== Slide Container ===== */
+  .slide {
+    width: 960px;
+    min-height: 720px;
+    margin: 30px auto;
+    background: #ffffff;
+    padding: 56px 64px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    overflow: hidden;
+  }
+
+  .slide:last-child { page-break-after: auto; }
+
+  /* ===== Slide number ===== */
+  .slide-num {
+    position: absolute;
+    bottom: 18px;
+    right: 28px;
+    font-size: 13px;
+    color: #999;
+  }
+
+  /* ===== Typography ===== */
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 24px;
+    border-bottom: 3px solid #c0392b;
+    padding-bottom: 10px;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 10px;
+  }
+
+  p, li {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #2c3e50;
+  }
+
+  ul { padding-left: 24px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; }
+  strong { color: #1a1a2e; }
+
+  /* ===== Title Slide ===== */
+  .slide.title-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  .slide.title-slide h1 {
+    font-size: 38px;
+    color: #ffffff;
+    border-bottom: none;
+    margin-bottom: 12px;
+  }
+  .slide.title-slide .subtitle {
+    font-size: 22px;
+    color: #e74c3c;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .slide.title-slide .institution {
+    font-size: 18px;
+    color: #bdc3c7;
+    margin-top: 24px;
+  }
+  .slide.title-slide .year {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-top: 6px;
+  }
+
+  /* ===== End slide ===== */
+  .slide.end-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  .slide.end-slide h1 {
+    font-size: 36px;
+    color: #fff;
+    border-bottom: none;
+  }
+  .slide.end-slide p, .slide.end-slide a {
+    color: #bdc3c7;
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+  .slide.end-slide a { color: #3498db; text-decoration: none; }
+
+  /* ===== Tables ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 15px;
+  }
+  th {
+    background: #c0392b;
+    color: #fff;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  .highlight-cell { font-weight: 700; color: #c0392b; }
+
+  /* ===== Architecture Diagram ===== */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0;
+  }
+  .arch-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 100px;
+    color: #fff;
+  }
+  .arch-box.user { background: #7f8c8d; }
+  .arch-box.proxy { background: #2c3e50; }
+  .arch-box.front { background: #2980b9; }
+  .arch-box.back { background: #27ae60; }
+  .arch-box.ml { background: #8e44ad; }
+  .arch-box.db { background: #d35400; }
+  .arch-box.cache { background: #c0392b; }
+  .arch-box.storage { background: #16a085; }
+  .arch-box.worker { background: #e67e22; }
+  .arch-box.monitor { background: #34495e; }
+
+  .arch-arrow {
+    font-size: 22px;
+    color: #7f8c8d;
+    font-weight: bold;
+  }
+  .arch-arrow-down {
+    font-size: 20px;
+    color: #7f8c8d;
+    text-align: center;
+  }
+  .arch-label {
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+    margin-top: -6px;
+  }
+
+  /* ===== Two columns ===== */
+  .cols {
+    display: flex;
+    gap: 32px;
+  }
+  .col { flex: 1; }
+
+  /* ===== Metric cards ===== */
+  .metrics-row {
+    display: flex;
+    gap: 16px;
+    margin: 14px 0;
+  }
+  .metric-card {
+    flex: 1;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .metric-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #c0392b;
+  }
+  .metric-card .label {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-top: 4px;
+  }
+
+  /* ===== Flow diagram ===== */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    background: #ecf0f1;
+    border: 2px solid #bdc3c7;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+    min-width: 90px;
+  }
+  .flow-step.active { border-color: #c0392b; background: #fdf2f2; }
+  .flow-arrow { font-size: 18px; color: #95a5a6; }
+
+  /* ===== Temporal bar chart ===== */
+  .bar-chart {
+    margin: 10px 0;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .bar-label {
+    width: 170px;
+    text-align: right;
+    padding-right: 12px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  .bar-track {
+    flex: 1;
+    height: 26px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .bar-fill.random { background: #27ae60; }
+  .bar-fill.temporal { background: #e67e22; }
+  .bar-fill.bad { background: #c0392b; }
+
+  /* ===== Conclusion list ===== */
+  .check-list li {
+    list-style: none;
+    padding-left: 4px;
+  }
+  .check-list li::before {
+    content: "\2713\0020";
+    color: #27ae60;
+    font-weight: bold;
+  }
+
+  /* ===== Print ===== */
+  @media print {
+    body { background: #fff; }
+    .slide {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+      min-height: 100vh;
+      padding: 48px 56px;
+      page-break-inside: avoid;
+    }
+  }
+
+  /* ===== Responsive fallback ===== */
+  @media screen and (max-width: 1000px) {
+    .slide {
+      width: 100%;
+      min-height: auto;
+      margin: 16px 0;
+      padding: 32px 28px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide title-slide">
+  <h1>ИИ-система анализа данных токамаков</h1>
+  <div class="subtitle">Tokamak Analysis Platform</div>
+  <div class="institution">НИЯУ МИФИ — Национальный исследовательский ядерный университет</div>
+  <div class="year">2026</div>
+  <span class="slide-num" style="color:#7f8c8d;">1</span>
+</div>
+
+<!-- ==================== SLIDE 2: Problem ==================== -->
+<div class="slide">
+  <h1>Проблема</h1>
+  <ul>
+    <li><strong>Срыв плазмы</strong> в токамаке = ущерб <strong>$50 000 — 500 000</strong> за событие</li>
+    <li><strong>ITER</strong> — международный термоядерный реактор (500 MW), Россия — участник проекта</li>
+    <li>Необходимо предсказывать срывы за <strong>100—500 мс</strong> до события</li>
+    <li>Существующие решения — изолированные модели без единой платформы</li>
+    <li>Нет российских веб-платформ для ML-анализа данных токамаков</li>
+  </ul>
+
+  <h2 style="margin-top:24px;">Цель работы</h2>
+  <p>Разработать первую в России веб-платформу для ML-анализа экспериментальных данных токамаков с загрузкой данных из международных архивов, интерактивной визуализацией и предсказанием срывов плазмы.</p>
+  <span class="slide-num">2</span>
+</div>
+
+<!-- ==================== SLIDE 3: Solution ==================== -->
+<div class="slide">
+  <h1>Решение — Tokamak Analysis</h1>
+  <p style="margin-bottom:18px;">Первая в России веб-платформа для ML-анализа данных токамаков</p>
+  <ul>
+    <li>Загрузка данных из <strong>FAIR-MAST</strong> (11 573 экспериментальных выстрела)</li>
+    <li><strong>3 ML-архитектуры:</strong> Random Forest, bi-LSTM+Attention, Transformer</li>
+    <li>Интерактивная визуализация параметров плазмы (Plotly.js)</li>
+    <li>Предсказание срывов + рекомендации по стабилизации</li>
+    <li>Open-source, Docker, <strong>100% покрытие</strong> функциональных требований</li>
+  </ul>
+
+  <h2 style="margin-top:20px;">Данные</h2>
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="value">500</div>
+      <div class="label">выстрелов</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">200</div>
+      <div class="label">временных шагов</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">20</div>
+      <div class="label">признаков</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">FAIR-MAST</div>
+      <div class="label">источник данных</div>
+    </div>
+  </div>
+  <span class="slide-num">3</span>
+</div>
+
+<!-- ==================== SLIDE 4: Architecture ==================== -->
+<div class="slide">
+  <h1>Архитектура системы</h1>
+  <div class="arch-diagram">
+    <!-- User -->
+    <div class="arch-row">
+      <div class="arch-box user">Браузер</div>
+    </div>
+    <div class="arch-arrow-down">&#9660;</div>
+
+    <!-- Nginx -->
+    <div class="arch-row">
+      <div class="arch-box proxy">Nginx (reverse proxy)</div>
+    </div>
+    <div class="arch-arrow-down">&#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660;</div>
+
+    <!-- Frontend / Backend / Grafana -->
+    <div class="arch-row">
+      <div class="arch-box front">React 18<br><span style="font-size:11px;">(SPA)</span></div>
+      <div class="arch-box back">FastAPI<br><span style="font-size:11px;">(Backend)</span></div>
+      <div class="arch-box monitor">Grafana<br><span style="font-size:11px;">(мониторинг)</span></div>
+    </div>
+    <div class="arch-label">Frontend сеть &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Backend сеть</div>
+    <div class="arch-arrow-down">&#9660;</div>
+
+    <!-- Backend row: ML Service -->
+    <div class="arch-row">
+      <div class="arch-box ml">ML Service<br><span style="font-size:11px;">(PyTorch / sklearn)</span></div>
+    </div>
+    <div class="arch-arrow-down">&#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660;</div>
+
+    <!-- Data layer -->
+    <div class="arch-row">
+      <div class="arch-box db">PostgreSQL<br><span style="font-size:11px;">(данные)</span></div>
+      <div class="arch-box cache">Redis<br><span style="font-size:11px;">(кэш / очереди)</span></div>
+      <div class="arch-box storage">MinIO<br><span style="font-size:11px;">(модели S3)</span></div>
+    </div>
+    <div class="arch-arrow-down" style="margin-top:2px;">&#9660;</div>
+    <div class="arch-row">
+      <div class="arch-box worker">Celery Workers<br><span style="font-size:11px;">(обучение ML)</span></div>
+    </div>
+  </div>
+  <p style="text-align:center; font-size:14px; color:#7f8c8d; margin-top:8px;"><strong>12 Docker-сервисов</strong> &middot; <strong>4 сети</strong> &middot; Модульный монолит + ML-сервис</p>
+  <span class="slide-num">4</span>
+</div>
+
+<!-- ==================== SLIDE 5: Tech Stack ==================== -->
+<div class="slide">
+  <h1>Технологический стек</h1>
+  <div class="cols">
+    <div class="col">
+      <h3>Backend</h3>
+      <ul>
+        <li>FastAPI + SQLAlchemy (async)</li>
+        <li>PostgreSQL 16</li>
+        <li>Redis 7 (кэш + брокер)</li>
+        <li>Celery (асинхронные задачи)</li>
+        <li>Alembic (миграции БД)</li>
+        <li>Pydantic (валидация)</li>
+      </ul>
+      <h3 style="margin-top:16px;">ML / Data Science</h3>
+      <ul>
+        <li>PyTorch — LSTM, Transformer</li>
+        <li>scikit-learn — Random Forest</li>
+        <li>MinIO (хранилище моделей)</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Frontend</h3>
+      <ul>
+        <li>React 18 + TypeScript</li>
+        <li>Plotly.js (визуализация)</li>
+        <li>Zustand (состояние)</li>
+        <li>Vite (сборка)</li>
+      </ul>
+      <h3 style="margin-top:16px;">Инфраструктура</h3>
+      <ul>
+        <li>Docker Compose (12 сервисов)</li>
+        <li>Nginx (reverse proxy)</li>
+        <li>Prometheus + Grafana</li>
+        <li>Alertmanager + Telegram</li>
+        <li>GitHub Actions (CI/CD)</li>
+      </ul>
+    </div>
+  </div>
+  <span class="slide-num">5</span>
+</div>
+
+<!-- ==================== SLIDE 6: ML Results ==================== -->
+<div class="slide">
+  <h1>Результаты ML-моделей — кросс-валидация</h1>
+  <p style="margin-bottom:10px;">3-fold кросс-валидация, датасет: 500 выстрелов &times; 200 шагов &times; 20 признаков</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Модель</th>
+        <th>CV Accuracy</th>
+        <th>CV AUC-ROC</th>
+        <th>Test Acc</th>
+        <th>Test AUC</th>
+        <th>P99 Латентность</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Random Forest</strong></td>
+        <td>98.4% &plusmn; 0.8%</td>
+        <td class="highlight-cell">0.983 &plusmn; 0.012</td>
+        <td>100%</td>
+        <td>1.000</td>
+        <td>73 мс</td>
+      </tr>
+      <tr>
+        <td><strong>bi-LSTM+Attention</strong></td>
+        <td>78.4% &plusmn; 0.9%</td>
+        <td>0.867 &plusmn; 0.013</td>
+        <td>80%</td>
+        <td>0.944</td>
+        <td>39 мс</td>
+      </tr>
+      <tr>
+        <td><strong>Transformer</strong></td>
+        <td>87.8% &plusmn; 1.0%</td>
+        <td>0.938 &plusmn; 0.034</td>
+        <td>100%</td>
+        <td>1.000</td>
+        <td>131 мс</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:20px;">Ключевые выводы</h2>
+  <ul>
+    <li><strong>Random Forest</strong> — лучшая модель по CV AUC (0.983), минимальная дисперсия</li>
+    <li><strong>Transformer</strong> — второе место (AUC 0.938), лучшая латентность инференса</li>
+    <li><strong>LSTM</strong> — требует больше эпох обучения (5 эпох в quick mode)</li>
+    <li>Сильный дисбаланс классов (86.8% срывов) может завышать метрики RF</li>
+  </ul>
+  <span class="slide-num">6</span>
+</div>
+
+<!-- ==================== SLIDE 7: Temporal Validation ==================== -->
+<div class="slide">
+  <h1>Темпоральная валидация</h1>
+  <p style="margin-bottom:6px;">Обучение на ранних выстрелах (shot &lt; 12035), тест на поздних (shot &ge; 12035)</p>
+  <p style="margin-bottom:16px; font-size:15px; color:#7f8c8d;">Случайное разбиение завышает метрики — темпоральная валидация показывает реальную обобщающую способность</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Модель</th>
+        <th>Random AUC</th>
+        <th>Temporal AUC</th>
+        <th>Деградация</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Random Forest</strong></td>
+        <td>1.000</td>
+        <td class="highlight-cell">0.969</td>
+        <td>&minus;3.1%</td>
+      </tr>
+      <tr>
+        <td><strong>bi-LSTM+Attention</strong></td>
+        <td>0.941</td>
+        <td>0.671</td>
+        <td style="color:#c0392b; font-weight:700;">&minus;27.0%</td>
+      </tr>
+      <tr>
+        <td><strong>Transformer</strong></td>
+        <td>1.000</td>
+        <td>0.892</td>
+        <td style="color:#e67e22; font-weight:700;">&minus;10.8%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:18px;">Визуализация деградации AUC</h2>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">RF — Random</div>
+      <div class="bar-track"><div class="bar-fill random" style="width:100%;">1.000</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">RF — Temporal</div>
+      <div class="bar-track"><div class="bar-fill temporal" style="width:96.9%;">0.969</div></div>
+    </div>
+    <div class="bar-row" style="margin-top:6px;">
+      <div class="bar-label">LSTM — Random</div>
+      <div class="bar-track"><div class="bar-fill random" style="width:94.1%;">0.941</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">LSTM — Temporal</div>
+      <div class="bar-track"><div class="bar-fill bad" style="width:67.1%;">0.671</div></div>
+    </div>
+    <div class="bar-row" style="margin-top:6px;">
+      <div class="bar-label">Transformer — Random</div>
+      <div class="bar-track"><div class="bar-fill random" style="width:100%;">1.000</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Transformer — Temporal</div>
+      <div class="bar-track"><div class="bar-fill temporal" style="width:89.2%;">0.892</div></div>
+    </div>
+  </div>
+  <p style="font-size:14px; color:#7f8c8d; margin-top:4px;"><strong>Вывод:</strong> Random Forest наиболее устойчив к временному сдвигу данных (деградация всего 3.1%)</p>
+  <span class="slide-num">7</span>
+</div>
+
+<!-- ==================== SLIDE 8: Data ==================== -->
+<div class="slide">
+  <h1>Данные FAIR-MAST</h1>
+  <div class="cols">
+    <div class="col">
+      <h3>Источник</h3>
+      <ul>
+        <li><strong>11 573</strong> экспериментальных выстрела</li>
+        <li>Токамак MAST (Великобритания, UKAEA)</li>
+        <li>Формат: Zarr/S3 (открытый доступ)</li>
+        <li>10 EFM-сигналов равновесия плазмы</li>
+      </ul>
+      <h3 style="margin-top:14px;">Сигналы</h3>
+      <ul>
+        <li>Ток плазмы (I<sub>p</sub>)</li>
+        <li>Электронная плотность (n<sub>e</sub>)</li>
+        <li>Температура плазмы</li>
+        <li>Магнитные параметры (B<sub>t</sub>, q<sub>95</sub>)</li>
+        <li>Геометрия плазмы (элонгация, триангулярность)</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Предобработка</h3>
+      <ul>
+        <li>Min-max нормализация</li>
+        <li>Линейная интерполяция пропусков</li>
+        <li>Ресемплинг к единой временной сетке</li>
+        <li>Скользящее окно 30 мс для меток</li>
+      </ul>
+      <h3 style="margin-top:14px;">Рабочий датасет</h3>
+      <div class="metric-card" style="margin-top:8px;">
+        <div class="value" style="font-size:20px;">500 &times; 200 &times; 20</div>
+        <div class="label">выстрелов &times; шагов &times; признаков</div>
+      </div>
+      <div class="metric-card" style="margin-top:8px;">
+        <div class="value" style="font-size:20px;">86.8%</div>
+        <div class="label">доля срывов в датасете</div>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">8</span>
+</div>
+
+<!-- ==================== SLIDE 9: Demo Flow ==================== -->
+<div class="slide">
+  <h1>Демонстрация работы платформы</h1>
+
+  <div class="flow" style="margin-top:20px;">
+    <div class="flow-step active">Регистрация /<br>Вход</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Dashboard</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step active">Загрузка<br>выстрела</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Визуализация<br>сигналов</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step active">Классификация<br>ML</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Обучение<br>модели</div>
+  </div>
+
+  <div class="cols" style="margin-top:24px;">
+    <div class="col">
+      <h3>1. Аутентификация</h3>
+      <ul>
+        <li>JWT + refresh token rotation</li>
+        <li>3 роли: исследователь, инженер, админ</li>
+        <li>Согласие на обработку ПДн (152-ФЗ)</li>
+      </ul>
+      <h3 style="margin-top:12px;">2. Загрузка и визуализация</h3>
+      <ul>
+        <li>Ввод Shot ID (напр. 30420)</li>
+        <li>Интерактивные графики Plotly.js</li>
+        <li>Zoom, pan, hover, выбор сигналов</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>3. ML-классификация</h3>
+      <ul>
+        <li>Выбор модели (RF / LSTM / Transformer)</li>
+        <li>Вердикт: стабильный / нестабильный</li>
+        <li>Confidence score + рекомендации</li>
+      </ul>
+      <h3 style="margin-top:12px;">4. Обучение моделей</h3>
+      <ul>
+        <li>Настройка гиперпараметров через UI</li>
+        <li>Асинхронное обучение (Celery)</li>
+        <li>Версионирование моделей (MinIO)</li>
+      </ul>
+    </div>
+  </div>
+  <span class="slide-num">9</span>
+</div>
+
+<!-- ==================== SLIDE 10: Security & Quality ==================== -->
+<div class="slide">
+  <h1>Безопасность и качество</h1>
+  <div class="cols">
+    <div class="col">
+      <h3>Безопасность</h3>
+      <ul>
+        <li>JWT-аутентификация + refresh token rotation</li>
+        <li>bcrypt (cost factor 12), RBAC (3 роли)</li>
+        <li>OWASP-сканирование: <strong>15/16 проверок PASS</strong></li>
+        <li>152-ФЗ: согласие на обработку ПДн</li>
+        <li>Аудит-лог всех действий</li>
+        <li>Rate limiting, CORS, CSP headers</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Тестирование</h3>
+      <ul>
+        <li><strong>110 автотестов</strong> (unit + integration + E2E)</li>
+        <li>CI/CD через GitHub Actions</li>
+        <li>Покрытие кода 80%+</li>
+        <li>Линтинг: Ruff (Python), ESLint (TS)</li>
+      </ul>
+      <h3 style="margin-top:12px;">Мониторинг</h3>
+      <ul>
+        <li>Prometheus + Grafana (2 дашборда)</li>
+        <li>10 алертов + Telegram-бот</li>
+        <li>Structured logging (JSON)</li>
+      </ul>
+    </div>
+  </div>
+  <span class="slide-num">10</span>
+</div>
+
+<!-- ==================== SLIDE 11: Results Summary ==================== -->
+<div class="slide">
+  <h1>Итоги проекта</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Требование</th>
+        <th>Цель</th>
+        <th>Факт</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Функциональные требования</td>
+        <td>17/17</td>
+        <td class="highlight-cell">17/17</td>
+      </tr>
+      <tr>
+        <td>Автотесты</td>
+        <td>50+</td>
+        <td class="highlight-cell">110</td>
+      </tr>
+      <tr>
+        <td>CV AUC-ROC (лучшая модель)</td>
+        <td>&ge; 0.90</td>
+        <td class="highlight-cell">0.983 (RF)</td>
+      </tr>
+      <tr>
+        <td>Temporal AUC-ROC</td>
+        <td>&ge; 0.85</td>
+        <td class="highlight-cell">0.969 (RF)</td>
+      </tr>
+      <tr>
+        <td>Латентность инференса</td>
+        <td>&le; 50 мс</td>
+        <td class="highlight-cell">39 мс (LSTM)</td>
+      </tr>
+      <tr>
+        <td>OWASP безопасность</td>
+        <td>&ge; 80%</td>
+        <td class="highlight-cell">94% (15/16)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="metrics-row" style="margin-top:20px;">
+    <div class="metric-card">
+      <div class="value">18 100</div>
+      <div class="label">строк кода</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">30</div>
+      <div class="label">API эндпоинтов</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">12</div>
+      <div class="label">Docker-сервисов</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">3</div>
+      <div class="label">ML-модели</div>
+    </div>
+  </div>
+  <span class="slide-num">11</span>
+</div>
+
+<!-- ==================== SLIDE 12: Future Work ==================== -->
+<div class="slide">
+  <h1>Заключение и планы развития</h1>
+
+  <h2>Заключение</h2>
+  <ul class="check-list">
+    <li>Разработана первая в России веб-платформа для ML-анализа данных токамаков</li>
+    <li>Реализованы 3 архитектуры ML: Random Forest, bi-LSTM+Attention, Transformer</li>
+    <li>Лучшая модель (RF) достигает CV AUC 0.983 и темпоральный AUC 0.969</li>
+    <li>Полная инфраструктура: 12 Docker-сервисов, CI/CD, мониторинг, безопасность</li>
+    <li>Все 17 функциональных требований выполнены</li>
+  </ul>
+
+  <h2 style="margin-top:20px;">Планы развития</h2>
+  <ul>
+    <li>Обучение на <strong>500+ выстрелах</strong> для повышения обобщающей способности</li>
+    <li><strong>Cross-tokamak validation</strong> на данных DIII-D (General Atomics)</li>
+    <li>Интеграция с российскими установками <strong>МИФИСТ</strong> и <strong>Т-15МД</strong></li>
+    <li>Регистрация программы в <strong>Роспатенте</strong></li>
+    <li>Публикация на <strong>arXiv</strong> (cs.LG / physics.plasm-ph)</li>
+    <li>Real-time streaming данных с токамака</li>
+  </ul>
+  <span class="slide-num">12</span>
+</div>
+
+<!-- ==================== SLIDE 13: Thank You ==================== -->
+<div class="slide end-slide">
+  <h1>Спасибо за внимание!</h1>
+  <p style="margin-top:30px; font-size:18px; color:#ecf0f1;">Вопросы?</p>
+  <p style="margin-top:40px;">НИЯУ МИФИ, 2026</p>
+  <span class="slide-num" style="color:#7f8c8d;">13</span>
+</div>
+
+</body>
+</html>
