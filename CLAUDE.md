@@ -298,7 +298,9 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - After `docker compose build`, run `retrain_models.py` inside container (COPY bakes in old host models)
 - **Actual ML inference: ~19ms** — the 6s total latency is `prepare_features` interpolating 229 raw signals, not the model
 - Experiment list endpoint uses `noload(Experiment.timeseries)` — timeseries loaded separately via `/{id}/timeseries`
-- **20 commits**, **~21,000 LOC**, dashboard fully functional with 7 experiments
+- **23 commits**, **~21,000 LOC**, dashboard fully functional with 7 experiments
+- **GitHub**: https://github.com/sakiselev-ai/tokamak-analysis (public, MIT)
+- **Always push after commit** — every git commit must be followed by git push
 
 ## Known Limitations
 
@@ -307,7 +309,6 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - **RF/Transformer P99 > 50ms target**: Need model optimization or reduced n_estimators/sequence_length
 - **Class imbalance 86.8%**: Heuristic labels skew disruption-heavy; real `cpf/disruption_time` labels preferred
 - **SSL not configured**: Needs domain name for Let's Encrypt
-- **No git remote**: Project not pushed to GitHub yet
 
 ## Completed Artifacts
 
