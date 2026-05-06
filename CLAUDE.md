@@ -297,6 +297,8 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - `retrain_models.py` retrains all 3 models with consistent n_features=10, saves to `models/`
 - After `docker compose build`, run `retrain_models.py` inside container (COPY bakes in old host models)
 - **Actual ML inference: ~19ms** — the 6s total latency is `prepare_features` interpolating 229 raw signals, not the model
+- Experiment list endpoint uses `noload(Experiment.timeseries)` — timeseries loaded separately via `/{id}/timeseries`
+- **20 commits**, **~21,000 LOC**, dashboard fully functional with 7 experiments
 
 ## Known Limitations
 
