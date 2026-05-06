@@ -72,11 +72,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     )
 
 
-# Middleware (order matters: outermost middleware is added last)
-app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
-
-# CORS
+# CORS (must be before other middleware)
 origins = [o.strip() for o in settings.backend_cors_origins.split(",")]
 app.add_middleware(
     CORSMiddleware,
@@ -86,6 +82,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
 # Routers
 app.include_router(auth.router)
 app.include_router(experiments.router)
@@ -94,7 +94,7 @@ app.include_router(models.router)
 app.include_router(admin.router)
 app.include_router(legal.router)
 
-# Prometheus metrics
+# Prometheus metrics — instrument AFTER routers are added
 instrumentator.instrument(app).expose(app)
 
 

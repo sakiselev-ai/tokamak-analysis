@@ -25,6 +25,7 @@ TRAINING_RUNS = Counter(
 
 instrumentator = Instrumentator(
     should_group_status_codes=False,
-    should_ignore_untemplated=True,
+    should_ignore_untemplated=False,
+    should_instrument_requests_inprogress=True,
     excluded_handlers=["/health", "/metrics"],
 )
