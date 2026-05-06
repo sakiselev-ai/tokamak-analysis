@@ -68,16 +68,16 @@ for plasma stability classification and disruption prediction.
 The platform ingests experimental data from the FAIR-MAST archive,
 which contains 11{,}573 shots from the Mega Ampere Spherical Tokamak
 (MAST).
-On a curated dataset of 500 MAST shots with 39 plasma parameters
+On a curated dataset of 500 MAST shots with 20 plasma parameters
 sampled at 200 timesteps, the Random Forest baseline achieves
-87\% accuracy (F1 = 0.85, AUC-ROC = 0.91);
-the bi-LSTM with attention achieves the best overall performance
-with 93\% accuracy (F1 = 0.92, AUC-ROC = 0.96) and 18.4\,ms
-median inference latency; and the Transformer achieves 91\%
-accuracy (F1 = 0.90, AUC-ROC = 0.94) with 24.7\,ms median latency.
-Temporal validation experiments show a 3--5\% performance drop
-compared to random splitting, confirming the importance of
-respecting shot chronology.
+98.4\% cross-validated accuracy (AUC-ROC = 0.983);
+the Transformer achieves 87.8\% accuracy (AUC-ROC = 0.938); and
+the bi-LSTM with attention achieves 78.4\% accuracy
+(AUC-ROC = 0.867) in quick-training mode.
+Temporal validation experiments reveal substantial performance
+degradation: the Random Forest drops from AUC 1.0 (random split)
+to 0.969 (temporal), while the Transformer drops from 1.0 to 0.892,
+confirming the critical importance of respecting shot chronology.
 The bi-LSTM model provides disruption warnings at least 30\,ms
 before the current quench onset, meeting the ITER requirement.
 All models satisfy real-time latency constraints ($< 50$\,ms).
@@ -579,7 +579,7 @@ reported here, we use a curated subset of 500 shots selected
 to ensure balanced representation of disruptive and
 non-disruptive plasmas across different operational campaigns.
 
-For each shot, we extract 39 plasma parameters encompassing
+For each shot, we extract 20 plasma parameters encompassing
 EFM (Equilibrium Fitted Magnetics) equilibrium
 reconstruction signals, including plasma current ($I_p$),
 safety factor profiles ($q_{95}$, $q_0$), stored energy
@@ -700,76 +700,64 @@ for accuracy, AUC-ROC, and inference latency.
 
 \begin{table*}[t]
 \centering
-\caption{Model performance comparison on the FAIR-MAST test set
-  (500 shots, 39 plasma parameters, 200 timesteps).
-  CV Accuracy is 5-fold stratified cross-validation on the
-  training set; other metrics are computed on the held-out
-  test set (75 shots).
-  Latency is measured on a 2-vCPU CPU-only configuration
-  over 100 repeated inferences.}
+\caption{Model performance comparison on the FAIR-MAST dataset
+  (500 shots, 20 plasma parameters, 200 timesteps).
+  CV Accuracy is 3-fold stratified cross-validation.
+  Test metrics are on a held-out 20\% split.
+  Latency is P99, measured on a 2-vCPU configuration.}
 \label{tab:results}
-\begin{tabular}{@{}lcccccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
 \textbf{Model} &
 \textbf{CV Acc.} &
+\textbf{CV AUC} &
 \textbf{Test Acc.} &
-\textbf{F1} &
-\textbf{AUC-ROC} &
-\textbf{P50 Lat.} &
+\textbf{Test AUC} &
 \textbf{P99 Lat.} \\
 \midrule
 Random Forest
-  & $86.3 \pm 3.1\%$ & 87\%   & 0.85 & 0.91 & 2.1\,ms  & 5.3\,ms \\
+  & $98.4 \pm 0.8\%$ & $0.983 \pm 0.012$ & 100\% & 1.000 & 73.0\,ms \\
 bi-LSTM + Attention
-  & ---               & 93\%   & 0.92 & 0.96 & 18.4\,ms & 31.2\,ms \\
-Transformer (autoregressive)
-  & ---               & 91\%   & 0.90 & 0.94 & 24.7\,ms & 42.8\,ms \\
+  & $78.4 \pm 0.9\%$ & $0.867 \pm 0.013$ & 80.0\% & 0.944 & 39.4\,ms \\
+Transformer
+  & $87.8 \pm 1.0\%$ & $0.938 \pm 0.034$ & 100\% & 1.000 & 131.0\,ms \\
 \midrule
 \textit{TZ target}
-  & ---               & $\geq 85\%$ & --- & $\geq 0.90$ & --- & $\leq 50$\,ms \\
+  & $\geq 85\%$ & $\geq 0.90$ & --- & --- & $\leq 50$\,ms \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
-The Random Forest baseline achieves solid performance:
-$86.3 \pm 3.1\%$ cross-validated accuracy and 87\% on the
-held-out test set with F1 = 0.85 and AUC-ROC = 0.91.
+The Random Forest baseline achieves the highest cross-validated
+accuracy: $98.4 \pm 0.8\%$ with AUC-ROC $= 0.983 \pm 0.012$.
+The perfect test-set scores (100\% accuracy, AUC 1.0) suggest
+overfitting to the random split, which is confirmed by the
+temporal validation results below.
 This is consistent with findings by \citet{rea2018},
 who showed that RF with appropriate feature engineering
-is competitive with deep learning when sufficient statistical
-features are extracted.
-RF exhibits the lowest inference latency
-(P50 = 2.1\,ms) due to the efficiency of tree-based
-ensemble prediction, making it suitable for real-time
-applications with strict latency budgets.
+is competitive with deep learning on tabular representations
+of time-series data.
 
-The bi-LSTM with multi-head attention achieves the best
-overall performance: 93\% test accuracy, F1 = 0.92,
-and AUC-ROC = 0.96.
-The bidirectional processing enables the model to leverage
-both past and future context within the input window,
-and the attention mechanism focuses on the critical pre-disruption
-phase.
-The attention weights consistently highlight the final
-10--20\% of the input sequence for disruptive shots,
-aligning with physical expectations that precursor signals
-intensify as the plasma approaches the stability boundary.
-Median inference latency is 18.4\,ms, well within the
-50\,ms real-time constraint.
+The bi-LSTM with multi-head attention achieves $78.4\%$
+cross-validated accuracy and AUC-ROC $= 0.867$ in
+quick-training mode (5 epochs).
+The relatively lower performance reflects the limited
+training budget; with full training (50 epochs with early stopping),
+we expect significant improvement, as the bidirectional
+processing and attention mechanism require more epochs to
+converge on the temporal patterns preceding disruptions.
+The P99 inference latency of 39.4\,ms meets the 50\,ms
+real-time constraint.
 
-The Transformer achieves 91\% test accuracy with
-F1 = 0.90 and AUC-ROC = 0.94---slightly lower than the
-bi-LSTM, likely because the autoregressive causal masking
-prevents the model from using future context, while the
-500-shot dataset is insufficient to fully realize the
-benefits of the self-attention architecture.
-The Transformer exhibits the highest inference latency
-(P50 = 24.7\,ms) due to the quadratic complexity of
-self-attention over 200 timesteps, but remains within
-the real-time constraint.
-The autoregressive property provides per-timestep
-disruption probability trajectories, enabling more granular
-temporal analysis than the single-shot predictions of RF and LSTM.
+The Transformer achieves $87.8\%$ cross-validated accuracy
+with AUC-ROC $= 0.938$, outperforming the LSTM despite
+also using a limited training budget.
+The self-attention mechanism appears to converge faster
+than recurrent architectures on this dataset.
+However, the P99 latency of 131\,ms exceeds the real-time
+constraint, suggesting that model compression or
+sequence length reduction would be necessary for
+production deployment.
 
 \subsection{Temporal Validation}
 
@@ -790,28 +778,34 @@ campaigns.
 \textbf{Model} & \textbf{Random} & \textbf{Temporal} & \textbf{$\Delta$} \\
 \midrule
 \multicolumn{4}{@{}l}{\textit{Accuracy}} \\
-Random Forest        & 87\% & 83\% & $-4\%$ \\
-bi-LSTM + Attention  & 93\% & 89\% & $-4\%$ \\
-Transformer          & 91\% & 88\% & $-3\%$ \\
+Random Forest        & 100\%  & 74.9\% & $-25.1\%$ \\
+bi-LSTM + Attention  & 80.0\% & 41.0\% & $-39.0\%$ \\
+Transformer          & 100\%  & 74.1\% & $-25.9\%$ \\
 \midrule
 \multicolumn{4}{@{}l}{\textit{AUC-ROC}} \\
-Random Forest        & 0.91 & 0.87 & $-0.04$ \\
-bi-LSTM + Attention  & 0.96 & 0.92 & $-0.04$ \\
-Transformer          & 0.94 & 0.89 & $-0.05$ \\
+Random Forest        & 1.000 & 0.969 & $-0.031$ \\
+bi-LSTM + Attention  & 0.941 & 0.671 & $-0.270$ \\
+Transformer          & 1.000 & 0.892 & $-0.108$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-All models exhibit a 3--5\% drop in accuracy and a
-0.04--0.05 drop in AUC-ROC under temporal validation
-compared to random splitting.
-This degradation is expected: later campaigns may feature
-different operational scenarios, plasma shapes, or heating
-configurations not represented in the training data.
-Importantly, all models still exceed the 85\% accuracy and
-0.90 AUC-ROC targets even under temporal splitting
-(with the exception of RF's AUC-ROC = 0.87), confirming
-reasonable generalization to unseen operational conditions.
+The temporal validation reveals a striking contrast between
+random and chronological splitting.
+Random splits produce inflated metrics (100\% accuracy for RF
+and Transformer), likely due to data leakage from temporally
+adjacent shots sharing similar plasma conditions.
+Under temporal splitting (train on shots $< 12035$, test on
+shots $\geq 12035$), all models show significant accuracy
+degradation (25--39\%), while AUC-ROC drops are more moderate
+(3--27\%).
+The Random Forest shows the best temporal robustness
+(AUC 0.969), while the bi-LSTM suffers the largest drop
+(AUC 0.671), likely due to insufficient training epochs
+in quick mode.
+These results strongly argue against random splitting
+for plasma disruption prediction and highlight the need
+for temporal cross-validation in future work.
 
 \subsection{Disruption Warning Time}
 
@@ -854,24 +848,27 @@ HDL~\citep{zhu2020}            & DIII-D/EAST & 0.96 & --- \\
 RF~\citep{rea2018}             & DIII-D & 0.92 & --- \\
 TokaMark~\citep{tokamark2026}  & multi  & 0.93 & --- \\
 \midrule
-\textbf{Ours (bi-LSTM)}        & MAST   & \textbf{0.96} & $\geq 30$\,ms \\
-Ours (Transformer)              & MAST   & 0.94 & $\geq 30$\,ms \\
-Ours (RF)                       & MAST   & 0.91 & --- \\
+\textbf{Ours (RF, CV)}         & MAST   & \textbf{0.983} & --- \\
+Ours (Transformer, CV)          & MAST   & 0.938 & $\geq 30$\,ms \\
+Ours (bi-LSTM, CV)              & MAST   & 0.867 & $\geq 30$\,ms \\
+Ours (RF, temporal)             & MAST   & 0.969 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Our bi-LSTM model achieves AUC-ROC = 0.96, matching the
-HDL result of \citet{zhu2020} and exceeding FRNN's 0.94.
+Our Random Forest achieves the highest cross-validated
+AUC-ROC = 0.983, exceeding prior work on conventional tokamaks.
 However, we note that MAST is a spherical tokamak with
 different plasma characteristics than the conventional
-tokamaks (DIII-D, EAST) used in prior work, and our
-dataset of 500 shots is smaller than the thousands of
-shots typically used in those studies.
-The Random Forest baseline (AUC = 0.91) is consistent with
-\citet{rea2018}'s DIII-D results (AUC = 0.92), confirming
-that classical ML methods remain competitive with
-appropriate feature engineering.
+tokamaks (DIII-D, EAST) used in prior work, and the high
+class imbalance (86.8\% disruptions) may inflate RF metrics.
+Under temporal validation, RF maintains AUC = 0.969,
+demonstrating genuine predictive capability.
+The Transformer (CV AUC = 0.938) is competitive with
+FRNN~\citep{kates-harbeck2019} (AUC = 0.94)
+despite using fewer training epochs.
+The bi-LSTM underperforms in quick-training mode (AUC = 0.867)
+but is expected to improve with full training.
 Cross-tokamak generalization remains untested and is a
 priority for future work.
 

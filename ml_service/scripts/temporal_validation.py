@@ -251,8 +251,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Path to .npz file (X, y, shot_ids). Synthetic if missing.")
     parser.add_argument("--output", default="results/temporal_validation.json",
                         help="Path to save JSON results")
-    parser.add_argument("--split-point", type=int, default=18000,
-                        help="Shot ID boundary between train/test periods")
+    parser.add_argument("--split-point", type=int, default=0,
+                        help="Shot ID boundary between train/test periods (0=auto median)")
     parser.add_argument("--quick", action="store_true",
                         help="Smaller data, fewer epochs for fast testing")
     parser.add_argument("--seed", type=int, default=42)
@@ -283,6 +283,9 @@ def main(argv: list[str] | None = None) -> dict:
         print("WARNING: torch not installed, skipping neural models.")
 
     # --- Temporal split ---
+    if args.split_point == 0:
+        args.split_point = int(np.median(shot_ids))
+        print(f"Auto split point: median shot ID = {args.split_point}")
     X_tr_t, y_tr_t, X_te_t, y_te_t = temporal_split(X, y, shot_ids, args.split_point)
     n_early = len(X_tr_t)
     n_late = len(X_te_t)
