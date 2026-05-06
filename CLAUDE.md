@@ -28,9 +28,11 @@ and disruption prediction.
 - **Frontend**: http://186.246.31.81/
 - **API docs**: http://186.246.31.81/docs
 - **Grafana**: http://186.246.31.81:3001/
-- **DB**: 5 users, 4 models registered, 1 experiment
-- **Trained models on disk**: `rf_baseline.joblib`, `lstm_attention.pt`, `transformer.pt` + checkpoints
+- **DB**: 5 users, 5 models registered, 3 experiments (shots 11700, 11750, 30420), 4 predictions, 1 completed training run
+- **Trained models on disk**: `rf_baseline.joblib`, `lstm_attention.pt`, `transformer.pt` + 7 checkpoints
+- **Backups**: cron daily at 3:00 → pg_dump + encrypt + MinIO
 - **Not a git repo on VPS** — sync via `rsync` or `scp`, then `docker compose build`
+- **Admin login**: `admin@mephi.ru` / `admin123`
 
 ### Sync & deploy commands
 ```bash
@@ -149,17 +151,18 @@ deploy/
 └── backup.sh                  # pg_dump + encrypt + MinIO upload + retention (7 daily, 4 weekly)
 
 e2e/tests/                     # 6 Playwright specs: auth, experiments, export, predictions, training + helpers
-paper/                         # preprint.tex + references.bib (25 citations)
-rospatent/                     # referat.md, application_form.md, deposited_code.py
-presentation/                  # slides.md, demo_script.md
+paper/                         # preprint.tex + references.bib (25 citations) + preprint.pdf (10 pages)
+rospatent/                     # referat.md, application_form.md, deposited_code.py, deposited_listing.txt, README_FINAL.md
+presentation/                  # slides.md, demo_script.md, index.html (13-slide standalone HTML)
 configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams + grid search)
 ```
 
 ## FAIR-MAST Data
 
 - **S3 endpoint**: `https://s3.echo.stfc.ac.uk`, bucket `mast`, anonymous access
-- **Structure**: `mast/level1/shots/{shot_id}/` (NOT `mast/shots/` — common mistake)
+- **Structure**: `mast/level1/shots/{shot_id}.zarr` (NOT `mast/shots/` or `mast/{id}`)
 - **Also available**: `mast/level2/`, `mast/dev/`, `mast/test/`, `mast/tokamark/`
+- **Shot IDs in cache**: 11695–12445 range (early MAST campaigns)
 - **VPS cache**: `/opt/tokamak-analysis/ml_service/data/shot_cache/` — 567 shots as `.pkl` tuples `(features_ndarray, label_int)`
 - **Dataset**: `data/fair_mast_500.npz` — 500 shots × 200 timesteps × 20 features, 86.8% disruptions
 - **Labels**: Heuristic-based via plasma current drop (not `cpf/disruption_time` — most early MAST shots lack this field)
@@ -192,16 +195,17 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 ## Project Metrics
 
-- **10 commits** on main branch
-- **85 Python files** (8,993 LOC), **29 TypeScript files** (3,135 LOC)
-- **Infrastructure**: 1,139 LOC (YAML/JSON/conf)
-- **Documentation**: 4,822 LOC (MD/TeX/bib)
-- **Total**: ~18,100 LOC
+- **16 commits** on main branch
+- **188 files**, **~20,600 LOC total**
+- **85 Python files** (~9,000 LOC), **29 TypeScript files** (~3,100 LOC)
+- **Infrastructure**: ~1,100 LOC (YAML/JSON/conf)
+- **Documentation**: ~7,400 LOC (MD/TeX/bib/HTML)
 - **30 API endpoints**, **10 ORM models**, **3 ML models**
 - **110 tests** (58 backend + 31 ML + 21 E2E)
 - **12 Docker services**, **4 networks**, **3 Alembic migrations**
 - **10 Prometheus alerts**, **2 Grafana dashboards**
 - **All 17 functional requirements (FR-001–FR-017) covered**
+- **End-to-end predict flow verified**: load shot → classify → disruption prediction
 
 ## Code Conventions
 
@@ -270,7 +274,7 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 ## Important Notes
 
-- FAIR-MAST S3 path: `mast/level1/shots/{shot_id}/` (NOT `mast/shots/`)
+- FAIR-MAST S3 path: `mast/level1/shots/{shot_id}.zarr` (NOT `mast/shots/` or `mast/{id}`)
 - `load_shots()` returns `(data_list, loaded_ids)` — tracks which shots loaded successfully
 - ML models implement unified `ModelInterface` (fit/predict/predict_proba/save/load/metadata)
 - Config files in `/configs/{rf,lstm,transformer}.yml` — hyperparameters + grid search spaces
@@ -283,3 +287,29 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - `consent_given_at` and `deleted_at` fields on User model for 152-FZ compliance
 - `sliding_window_labels()` implements 30ms warning window (FR-005)
 - Temporal validation script auto-computes median split point when `--split-point=0`
+- `PredictRequest.model_path` is optional — ML service falls back to default models or trains on-the-fly
+- `prepare_features` defaults to `max_features=10` to match trained models on VPS
+- Trained models on VPS expect 10 features; dataset has 20 features (padded from varied shapes)
+
+## Known Limitations
+
+- **Inference cold start ~6s**: First predict call trains synthetic model if saved model has wrong feature count. Subsequent calls are cached.
+- **LSTM quick-mode AUC 0.867**: Needs full training (50 epochs) for production-quality results
+- **RF/Transformer P99 > 50ms target**: Need model optimization or reduced n_estimators/sequence_length
+- **Class imbalance 86.8%**: Heuristic labels skew disruption-heavy; real `cpf/disruption_time` labels preferred
+- **SSL not configured**: Needs domain name for Let's Encrypt
+- **No git remote**: Project not pushed to GitHub yet
+
+## Completed Artifacts
+
+| Artifact | Path | Status |
+|----------|------|--------|
+| Preprint PDF | `paper/preprint.pdf` | 10 pages, real metrics, 25 citations |
+| Presentation | `presentation/index.html` | 13 slides, standalone HTML, printable |
+| Rospatent listing | `rospatent/deposited_listing.txt` | 1666 lines, 10 source files |
+| Rospatent instructions | `rospatent/README_FINAL.md` | FIPS submission checklist |
+| User guide | `docs/user-guide.md` | Full guide in Russian |
+| Deployment guide | `docs/deployment-guide.md` | VPS setup, SSL, backups |
+| API reference | `docs/api-reference.md` | 30 endpoints with examples |
+| Grafana dashboards | `monitoring/grafana/dashboards/` | 2 dashboards pre-provisioned |
+| Backup cron | VPS crontab | Daily 3:00 AM, 7 daily + 4 weekly |
