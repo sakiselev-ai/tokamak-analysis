@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import log_action
 from app.core.security import get_current_user
 from app.database import get_db
 from app.models.ml_model import MLModel, ModelRun, ModelTask, ModelType, RunStatus
@@ -59,6 +60,7 @@ class TrainingStatusResponse(BaseModel):
 @router.post("/train", response_model=TrainResponse, status_code=status.HTTP_202_ACCEPTED)
 async def train_model(
     data: TrainRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -96,6 +98,18 @@ async def train_model(
         run.id, data.model_type, data.task, data.hyperparameters, data.dataset_shot_ids
     )
     run.celery_task_id = celery_result.id
+
+    await log_action(
+        db, "train_start", "model",
+        user_id=current_user.id,
+        details={
+            "model_type": data.model_type,
+            "task": data.task,
+            "run_id": run.id,
+            "model_id": model.id,
+        },
+        request=request,
+    )
 
     return TrainResponse(
         run_id=run.id,

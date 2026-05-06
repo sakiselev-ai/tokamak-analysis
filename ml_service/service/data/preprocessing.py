@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy import interpolate
 
 
 def prepare_features(signals: dict[str, dict], sequence_length: int = 200, max_features: int = 10) -> np.ndarray:
@@ -15,15 +14,28 @@ def prepare_features(signals: dict[str, dict], sequence_length: int = 200, max_f
     Returns:
         np.ndarray of shape (1, sequence_length, max_features).
     """
-    signal_names = sorted(signals.keys())[:max_features]
-    num_signals = max_features
+    # Pre-filter: only take the first max_features sorted signals that have
+    # enough valid data points, avoiding work on unusable signals.
+    signal_names: list[str] = []
+    for name in sorted(signals.keys()):
+        if len(signal_names) >= max_features:
+            break
+        sig = signals[name]
+        ts_raw = sig.get("timestamps")
+        vals_raw = sig.get("values")
+        if ts_raw is None or vals_raw is None:
+            continue
+        # Quick length check before allocating arrays
+        if len(ts_raw) < 2 or len(vals_raw) < 2:
+            continue
+        signal_names.append(name)
 
-    features = np.zeros((sequence_length, num_signals))
+    features = np.zeros((sequence_length, max_features))
 
     for i, name in enumerate(signal_names):
         signal = signals[name]
-        ts = np.array(signal["timestamps"], dtype=float)
-        vals = np.array(signal["values"], dtype=float)
+        ts = np.asarray(signal["timestamps"], dtype=np.float64)
+        vals = np.asarray(signal["values"], dtype=np.float64)
 
         # Remove invalid values
         valid = np.isfinite(ts) & np.isfinite(vals)
@@ -33,17 +45,16 @@ def prepare_features(signals: dict[str, dict], sequence_length: int = 200, max_f
         ts_clean = ts[valid]
         vals_clean = vals[valid]
 
-        # Sort and remove duplicates
+        # Sort by timestamp
         sort_idx = np.argsort(ts_clean)
         ts_clean = ts_clean[sort_idx]
         vals_clean = vals_clean[sort_idx]
 
-        # Resample to target length
+        # Resample to target length using numpy (much faster than scipy interp1d)
         ts_target = np.linspace(ts_clean[0], ts_clean[-1], sequence_length)
-        f = interpolate.interp1d(ts_clean, vals_clean, kind="linear", fill_value="extrapolate")
-        features[:, i] = f(ts_target)
+        features[:, i] = np.interp(ts_target, ts_clean, vals_clean)
 
-    # Normalize each signal to zero mean, unit variance
+    # Normalize each signal to zero mean, unit variance (vectorized)
     mean = features.mean(axis=0, keepdims=True)
     std = features.std(axis=0, keepdims=True)
     std[std < 1e-10] = 1.0

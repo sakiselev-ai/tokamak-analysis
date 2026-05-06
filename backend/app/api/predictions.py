@@ -4,11 +4,12 @@ import asyncio
 import time
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.audit import log_action
 from app.core.security import get_current_user
 from app.database import get_db
 from app.models.experiment import Experiment, TimeSeriesData
@@ -74,6 +75,7 @@ async def _get_model(model_id: int | None, task: ModelTask, db: AsyncSession) ->
 @router.post("/classify", response_model=ClassifyResponse)
 async def classify(
     data: ClassifyRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -99,6 +101,13 @@ async def classify(
     db.add(prediction)
     await db.flush()
 
+    await log_action(
+        db, "classify", "prediction",
+        user_id=current_user.id,
+        details={"experiment_id": data.experiment_id, "model_id": model.id, "label": result["label"]},
+        request=request,
+    )
+
     return ClassifyResponse(
         experiment_id=data.experiment_id,
         label=result["label"],
@@ -111,6 +120,7 @@ async def classify(
 @router.post("/disruption", response_model=DisruptionPredictResponse)
 async def predict_disruption(
     data: DisruptionPredictRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -142,6 +152,17 @@ async def predict_disruption(
     await db.flush()
 
     recommendations = generate_recommendations(result, threshold=data.threshold)
+
+    await log_action(
+        db, "disruption_predict", "prediction",
+        user_id=current_user.id,
+        details={
+            "experiment_id": data.experiment_id,
+            "model_id": model.id,
+            "warning_issued": result["warning_issued"],
+        },
+        request=request,
+    )
 
     return DisruptionPredictResponse(
         experiment_id=data.experiment_id,

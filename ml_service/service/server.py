@@ -24,6 +24,10 @@ app = FastAPI(title="Tokamak ML Service", version="1.0.0")
 # Cache for loaded models
 _model_cache: dict[str, object] = {}
 
+# Cache for prepared features keyed by shot_id to avoid re-computing
+# interpolation for the same shot across multiple predict calls.
+_features_cache: dict[int, np.ndarray] = {}
+
 
 class PredictRequest(BaseModel):
     data: dict
@@ -53,8 +57,14 @@ async def metrics():
 @app.post("/api/v1/predict/classify")
 async def classify(request: PredictRequest):
     try:
-        # Prepare features
-        features = prepare_features(request.data.get("signals", {}))
+        # Prepare features (with shot_id caching)
+        shot_id = request.data.get("shot_id")
+        if shot_id is not None and shot_id in _features_cache:
+            features = _features_cache[shot_id]
+        else:
+            features = prepare_features(request.data.get("signals", {}))
+            if shot_id is not None:
+                _features_cache[shot_id] = features
 
         # Load or get cached model
         model = _get_model(request.model_type, request.model_path)
@@ -86,7 +96,13 @@ async def classify(request: PredictRequest):
 @app.post("/api/v1/predict/disruption")
 async def predict_disruption(request: PredictRequest):
     try:
-        features = prepare_features(request.data.get("signals", {}))
+        shot_id = request.data.get("shot_id")
+        if shot_id is not None and shot_id in _features_cache:
+            features = _features_cache[shot_id]
+        else:
+            features = prepare_features(request.data.get("signals", {}))
+            if shot_id is not None:
+                _features_cache[shot_id] = features
         model = _get_model(request.model_type, request.model_path)
 
         if request.model_type == "random_forest":
