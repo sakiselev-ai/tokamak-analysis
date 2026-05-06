@@ -74,6 +74,14 @@ def prepare_forecasting_dataset(
     n_shots, seq_len, n_features = X.shape
     window_total = past_len + future_len
 
+    # Per-signal z-score normalization across all shots and timesteps.
+    # Without this, signals at different scales (plasma current ~MA,
+    # temperature ~keV) cause NRMSE to explode.
+    mean = X.mean(axis=(0, 1), keepdims=True)  # (1, 1, n_features)
+    std = X.std(axis=(0, 1), keepdims=True)
+    std[std < 1e-10] = 1.0
+    X = (X - mean) / std
+
     if seq_len < window_total:
         raise ValueError(
             f"seq_len ({seq_len}) must be >= past_len + future_len ({window_total})"
