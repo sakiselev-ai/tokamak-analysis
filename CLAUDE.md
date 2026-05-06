@@ -197,13 +197,13 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 ## Project Metrics
 
-- **18 commits** on main branch
-- **190 files**, **~21,000 LOC total**
-- **85 Python files** (~9,000 LOC), **29 TypeScript files** (~3,100 LOC)
+- **25 commits** on main branch, pushed to GitHub
+- **195+ files**, **~22,500 LOC total**
+- **90+ Python files** (~10,500 LOC), **29 TypeScript files** (~3,100 LOC)
 - **Infrastructure**: ~1,100 LOC (YAML/JSON/conf)
 - **Documentation**: ~7,400 LOC (MD/TeX/bib/HTML)
 - **30 API endpoints**, **10 ORM models**, **3 ML models**
-- **110 tests** (58 backend + 31 ML + 21 E2E)
+- **170 tests** (139 backend + 31 ML + 21 E2E), **backend coverage 81%** (NFR-011 ✅)
 - **12 Docker services**, **4 networks**, **3 Alembic migrations**
 - **10 Prometheus alerts**, **2 Grafana dashboards**
 - **All 17 functional requirements (FR-001–FR-017) covered**
@@ -222,11 +222,26 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 ## Testing
 
-- **Backend**: pytest-asyncio + httpx `AsyncClient` + SQLite in-memory (58 tests)
+- **Backend**: pytest-asyncio + httpx `AsyncClient` + SQLite in-memory (**139 tests, 81% coverage**)
+  - `test_auth.py` (13), `test_experiments.py` (15), `test_predictions.py` (21), `test_models_api.py` (17)
+  - `test_admin.py` (9), `test_security.py` (12), `test_health.py` (2), `test_preprocessing.py` (4)
+  - `test_fair_mast.py` (9), `test_minio_client.py` (7), `test_ml_client.py` (5)
+  - `test_recommendations.py` (10), `test_training.py` (8)
 - **ML Service**: pytest with synthetic data generation + mocked S3 (31 tests)
 - **E2E**: Playwright — auth, experiments, export, predictions, training (21 tests)
 - **CI**: GitHub Actions — lint + test + build + E2E (with docker compose)
-- **Fixtures**: `conftest.py` provides `client` (unauthenticated) and `auth_client` (JWT-authenticated)
+- **Fixtures**: `conftest.py` provides `client`, `auth_client`, `admin_client` fixtures
+
+## TokaMark Benchmark
+
+- **Paper**: arXiv:2602.10132 (Feb 2026), KDD 2026
+- **14 tasks** in 4 groups: equilibrium, magnetics, profiles, MHD/disruptions
+- **Metric**: NRMSE (regression), not AUC (classification)
+- **Data**: HuggingFace `UKAEA-IBM-STFC/tokamark-dataset` (~388 GB)
+- **Code**: `github.com/UKAEA-IBM-STFC-Fusion-FMs/tokamark`
+- **Relevant tasks**: Group 4 (4-1 to 4-5) — thermal quench, vertical displacement, current quench, locked modes
+- **No formal leaderboard yet** — self-evaluation against published baselines
+- **Strategy**: Adapt our models to TokaMark task format (time-series forecasting, not binary classification)
 
 ## API Routes Summary
 
