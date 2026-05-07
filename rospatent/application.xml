@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:RuptoRequest xmlns:rucom="urn:ru:rupto:common/1.0.4"
+                  xmlns:rudb="urn:ru:rupto:rudb/1.0.4"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:epgu="http://rupto.ru/standards/XMLSchema/epgu/1.0.1"
+                  xmlns:com="http://www.wipo.int/standards/XMLSchema/ST96/Common/1.0.8"
+                  xmlns:com1="http://www.wipo.int/standards/XMLSchema/ST96/Common/1.0.9"
+                  xmlns:tns="http://ws.rupto.ru/smev3/gosuslugi/clients/nis/prevm_registration/1.0.1"
+                  xmlns:ehd="http://rupto.ru/standards/XMLSchema/ehd/1.0.0">
+     <epgu:Order>
+                <epgu:orderId>7325697370</epgu:orderId>
+        <epgu:ServiceCode>60012585</epgu:ServiceCode>
+        <epgu:TargetCode>-60012585</epgu:TargetCode>
+                <epgu:orderDatetime>2026-05-07T22:17:17Z</epgu:orderDatetime>
+    </epgu:Order>
+    <tns:Service>
+                             <tns:DatabaseApplication>
+                <rudb:DatabaseTransaction com:st96Version="V4_0">
+                    <rudb:DatabaseTransactionBody com:st96Version="V4_0">
+                        <rudb:TransactionContentBag>
+                            <com:TransactionIdentifier>1</com:TransactionIdentifier>
+                            <com:TransactionCategory>Request registration</com:TransactionCategory>
+                            <com:TransactionSubCode>1</com:TransactionSubCode>
+                            <rudb:TransactionData>
+                                <rudb:DatabaseApplicationBag rucom:docKind="registration">
+                                    <rudb:DatabaseApplication>
+                                        <rucom:ApplicationType>ЕПГУ</rucom:ApplicationType>
+                                                                                                                        <rudb:DatabaseBag>
+                                            <rudb:Database>
+                                                <com:RegistrationNumber>7325697370</com:RegistrationNumber>
+                                                <com:RegistrationDate>2026-05-07</com:RegistrationDate>
+                                                                                                                                                <rudb:DatabaseType>Программа для ЭВМ</rudb:DatabaseType>                                                                                                    <rudb:DatabaseTitleText com:languageCode="ru">Tokamak Analysis — ИИ-система для анализа экспериментальных данных токамаков</rudb:DatabaseTitleText>
+                                                                                                                                                <com:RightEffectiveDate>2026</com:RightEffectiveDate>                                                                                                                                                                                                    <rudb:DatabasePreviousRegistrationBag>
+                                                        <rucom:NoRegistration>true</rucom:NoRegistration>
+                                                    </rudb:DatabasePreviousRegistrationBag>
+                                                                                                <rudb:Annotation>Программа «Tokamak Analysis» — веб-платформа машинного обучения для анализа экспериментальных данных установок управляемого термоядерного синтеза (токамаков) и раннего предсказания срывов плазмы. Загружает данные из архива FAIR-MAST (11 573 выстрела токамака MAST, Великобритания) через S3/Zarr. Классификация режимов плазмы тремя архитектурами: Random Forest (AUC-ROC 0.9677), bi-LSTM+Attention (AUC-ROC 0.9938, лучшая модель), Transformer (AUC-ROC 0.9415). Точность 97.3%, F1=0.973. Предсказание срывов с заблаговременностью 30+ мс. Forecasting временных рядов: LSTM NRMSE=0.143 (бенчмарк TokaMark). Стек: Python 3.11, PyTorch, scikit-learn, FastAPI, React 18, PostgreSQL 16, Redis, Celery, Docker Compose (12 сервисов). JWT-аутентификация, RBAC (3 роли), аудит-журнал, 152-ФЗ. Мониторинг: Prometheus+Grafana. Объём ~24 000 строк. MIT.</rudb:Annotation>                                                <rudb:OperatingSystem>Linux (Ubuntu 22.04/24.04), кроссплатформенная (Docker)</rudb:OperatingSystem>                                                                                                                                                <rudb:Capacity>5, Мбайт (мегабайт) </rudb:Capacity>                                                                                                    <rudb:Language> Python,   TypeScript 5.6 </rudb:Language>
+                                                                                                                                                                                                    <rudb:HolderCount>1</rudb:HolderCount>
+                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                            <rudb:Benefit>Право на уплату пошлины в уменьшенном размере отсутствует</rudb:Benefit>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    <rudb:ComputerType>Серверы и ПК (x86-64) с Docker</rudb:ComputerType>                                                                                                                                            </rudb:Database>
+                                        </rudb:DatabaseBag>
+                                        <com:ApplicationNumber>
+                                            <com:IPOfficeCode>RU</com:IPOfficeCode>
+                                            <com:ApplicationNumberText>7325697370</com:ApplicationNumberText>
+                                        </com:ApplicationNumber>
+                                        <com:ApplicationDate>2026-05-07</com:ApplicationDate>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <com:CorrespondenceAddress>
+                                            <com:Contact>
+                                                                                                <com:Name>
+                                                                                                        <com:PersonName>
+                                                        <com:PersonFullName>КИСЕЛЕВ ФЁДОР СЕРГЕЕВИЧ</com:PersonFullName>
+                                                    </com:PersonName>
+                                                                                                                                                        </com:Name>
+                                                                                                                                                <com:PostalAddressBag>
+                                                    <com:PostalAddress  rucom:preferredContact="true" >
+                                                        <com:PostalAddressText>117393, г. Москва, ул. Академика Пилюгина, д. 14, к. 1, кв. 118</com:PostalAddressText>
+                                                    </com:PostalAddress>
+                                                </com:PostalAddressBag>
+                                                                                                                                                <com:EmailAddressBag>
+                                                    <com:EmailAddressText  rucom:preferredContact="true" >fedorkiselev001@gmail.com</com:EmailAddressText>
+                                                </com:EmailAddressBag>
+                                                                                                                                                <com:PhoneNumberBag>
+                                                    <com:PhoneNumber>+7(916)4265828</com:PhoneNumber>
+                                                </com:PhoneNumberBag>
+                                                                                            </com:Contact>
+                                        </com:CorrespondenceAddress>
+                                        <rudb:ApplicantBag>
+                                                                                            <rudb:Applicant    >
+                                                    <com:NationalityCode>Stateless</com:NationalityCode>
+                                                    <com:Contact>
+                                                        <com:Name>
+                                                                                                                            <com:PersonName>
+                                                                    <com:PersonFullName>КИСЕЛЕВ ФЁДОР СЕРГЕЕВИЧ </com:PersonFullName>
+                                                                </com:PersonName>
+                                                                                                                                                                                                                                                                                                        </com:Name>
+                                                        <com:PostalAddressBag>
+                                                                                                                            <com:PostalAddress>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <com:PostalStructuredAddress>
+                                                                        <com:AddressLineText com:sequenceNumber="1"> ул. Академика Пилюгина, д. 14, к. 1, кв. 118</com:AddressLineText>
+                                                                        <com:CityName> </com:CityName>
+                                                                        <com:GeographicRegionName>(77) Москва г.</com:GeographicRegionName>
+                                                                        <com:CountryCode>RU</com:CountryCode>
+                                                                        <com:PostalCode>117393 </com:PostalCode>
+                                                                    </com:PostalStructuredAddress>
+                                                                </com:PostalAddress>
+                                                                <com:PostalAddress>
+                                                                    <com:PostalAddressText>117393, г. Москва, ул. Академика Пилюгина, д. 14, к. 1, кв. 118 </com:PostalAddressText>
+                                                                </com:PostalAddress>
+                                                                                                                                                                                                                                                                                                                                                                    </com:PostalAddressBag>
+                                                        <com:EmailAddressBag>
+                                                            <com:EmailAddressText>fedorkiselev001@gmail.com</com:EmailAddressText>                                                                                                                                                                                                                                            </com:EmailAddressBag>
+                                                        <com:PhoneNumberBag>
+                                                            <com:PhoneNumber>+7(916)4265828</com:PhoneNumber>                                                                                                                                                                                                                                            </com:PhoneNumberBag>
+                                                    </com:Contact>
+                                                                                                            <com:PartyIdentifier com:partyIdentifierCategory="Birth date">24.03.2008</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="Passport type">Паспорт РФ</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="Passport number">4622 649957</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="Passport issue date">19.05.2022</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="Passport issuing authority">ГУ МВД РОССИИ ПО МОСКОВСКОЙ ОБЛАСТИ 500057</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="Birth place">ГОРОД ВИДНОЕ МОСКОВСКАЯ ОБЛ.</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="National identification number">187-084-122 86</com:PartyIdentifier>
+                                                        <com:PartyIdentifier com:partyIdentifierCategory="Tax identifier">500314873151</com:PartyIdentifier>
+                                                                                                                                                                                                                                                                    <com:PartyIdentifier com:partyIdentifierCategory="ESIA">1195174737</com:PartyIdentifier>
+                                                    <rudb:ApplicantIsAuthor> true </rudb:ApplicantIsAuthor>
+                                                    <rudb:Others/>
+                                                </rudb:Applicant>
+                                                                                        
+                                                                                                                                </rudb:ApplicantBag>
+                                                                                
+                                                                                                                             <com:PaymentBag>
+                                                <com:Payment>
+                                                                                                    <com:PaymentIdentifier com:officeCode="RU">99807052026005814586</com:PaymentIdentifier>                                                                                                 <com:PaymentReference>Госпошлина за регистрацию программы для ЭВМ по номеру заявления на ЕПГУ 7325697370</com:PaymentReference>                                                 <com:PaymentModeCategory>Charge</com:PaymentModeCategory>
+                                                <com:PaymentMethod>
+                                                                                                            <com:OtherPaymentMethod>На Госуслугах</com:OtherPaymentMethod>
+                                                                                                    </com:PaymentMethod>
+                                                <com:PayerName>
+                                                                                                            <com:PersonName com:languageCode="ru">
+                                                            <com:PersonFullName>КИСЕЛЕВ ФЁДОР СЕРГЕЕВИЧ</com:PersonFullName>
+                                                        </com:PersonName>
+                                                                                                                                                                                                                                                                </com:PayerName>
+                                                <com:PaymentDate>2026-05-07</com:PaymentDate>
+                                                    <com:PaymentFeeBag>                                                             <com:PaymentFee>
+                                                                <com:FeeReference>7325697370</com:FeeReference>
+                                                                <com:BasicFeeAmount com:currencyCode="RUB">5000</com:BasicFeeAmount>
+                                                            </com:PaymentFee>
+                                                    </com:PaymentFeeBag>
+                                                <com:FeePayableTotalAmount com:currencyCode="RUB">5000</com:FeePayableTotalAmount>                                                                                                     <com:FeePaidTotalAmount com:currencyCode="RUB">5000</com:FeePaidTotalAmount>                                                                                                 <rucom:Payer>
+                                                                                                            <com1:PartyIdentifier com1:officeCode="RU" com1:partyIdentifierCategory="Tax identifier">500314873151</com1:PartyIdentifier>                                                         <com1:PartyIdentifier com1:officeCode="RU" com1:partyIdentifierCategory="National identification number">187-084-122 86</com1:PartyIdentifier>                                                                                                                                                                                                                                                                 </rucom:Payer>
+                                            </com:Payment>
+                                            </com:PaymentBag>
+                                        
+                                                                                                                             <com:DocumentIncludedBag>
+                                                                                                                                                                                                                                                            <com:DocumentIncluded>
+                                                            <com:DocumentName>Материалы, идентифицирующие программу,  включая реферат</com:DocumentName>
+                                                            <com:FileName>referat.pdf</com:FileName>
+                                                            <com:DocumentDate>2026-05-07</com:DocumentDate>
+                                                            <com:DocumentMediaCategory>File</com:DocumentMediaCategory>
+                                                            
+                                                            <com:DocumentSizeQuantity com:unitCode="b">26117</com:DocumentSizeQuantity>
+                                                            <com:IPOfficeCodeBag>
+                                                                <com:IPOfficeCode>RU</com:IPOfficeCode>
+                                                            </com:IPOfficeCodeBag>
+                                                        </com:DocumentIncluded>
+                                                                                                            <com:DocumentIncluded>
+                                                            <com:DocumentName>Материалы, идентифицирующие программу,  включая реферат</com:DocumentName>
+                                                            <com:FileName>screenshots.pdf</com:FileName>
+                                                            <com:DocumentDate>2026-05-07</com:DocumentDate>
+                                                            <com:DocumentMediaCategory>File</com:DocumentMediaCategory>
+                                                            
+                                                            <com:DocumentSizeQuantity com:unitCode="b">2751000</com:DocumentSizeQuantity>
+                                                            <com:IPOfficeCodeBag>
+                                                                <com:IPOfficeCode>RU</com:IPOfficeCode>
+                                                            </com:IPOfficeCodeBag>
+                                                        </com:DocumentIncluded>
+                                                                                                            <com:DocumentIncluded>
+                                                            <com:DocumentName>Материалы, идентифицирующие программу,  включая реферат</com:DocumentName>
+                                                            <com:FileName>deposited_listing.pdf</com:FileName>
+                                                            <com:DocumentDate>2026-05-07</com:DocumentDate>
+                                                            <com:DocumentMediaCategory>File</com:DocumentMediaCategory>
+                                                            
+                                                            <com:DocumentSizeQuantity com:unitCode="b">59000</com:DocumentSizeQuantity>
+                                                            <com:IPOfficeCodeBag>
+                                                                <com:IPOfficeCode>RU</com:IPOfficeCode>
+                                                            </com:IPOfficeCodeBag>
+                                                        </com:DocumentIncluded>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </com:DocumentIncludedBag>
+                                         
+                                                                                <com:SignatureBag>
+                                            <com:Signature>
+                                                <com:Contact com:languageCode="ru">
+                                                    <com:Name>
+                                                        <com:PersonName com:languageCode="ru">
+                                                            <com:PersonFullName>ФЁДОР КИСЕЛЕВ СЕРГЕЕВИЧ</com:PersonFullName>
+                                                                                                                    </com:PersonName>
+                                                    </com:Name>
+                                                </com:Contact>
+                                                <com:ElectronicSignature>
+                                                    <com1:ElectronicSignatureDate>2026-05-07</com1:ElectronicSignatureDate>
+                                                                                                            <com1:ElectronicSignaturePlace>ЕПГУ</com1:ElectronicSignaturePlace>
+                                                                                                                                                                <com1:ElectronicBasicSignature>
+                                                            <com1:ElectronicBasicSignatureClickWrap>false</com1:ElectronicBasicSignatureClickWrap>
+                                                        </com1:ElectronicBasicSignature>
+                                                    
+                                                                                                            <rucom:SignatureKind>УКЭП</rucom:SignatureKind>
+                                                                                                    </com:ElectronicSignature>
+                                            </com:Signature>
+                                        </com:SignatureBag>
+
+                                    </rudb:DatabaseApplication>
+                                </rudb:DatabaseApplicationBag>
+                            </rudb:TransactionData>
+                        </rudb:TransactionContentBag>
+                    </rudb:DatabaseTransactionBody>
+                </rudb:DatabaseTransaction>
+            </tns:DatabaseApplication>
+        
+                
+                
+                
+                
+                
+                    </tns:Service>
+
+        <ehd:EHDSpec>
+                            <ehd:DirectoryKind ehd:numberValue="150001" ehd:textValue="DC_INCOMING">
+                <ehd:FileKind ehd:numberValue="1236" ehd:textValue="APPLICATION">
+                    <ehd:FileName>application.xml</ehd:FileName>
+                </ehd:FileKind>
+                <ehd:FileKind ehd:numberValue="1236" ehd:textValue="APPLICATION">
+                    <ehd:FileName>pdf_application.pdf</ehd:FileName>
+                </ehd:FileKind>
+                                                                                            <ehd:FileKind ehd:numberValue="1060" ehd:textValue="ANY_MATERIAL">
+                            <ehd:FileName>referat.pdf</ehd:FileName>
+                        </ehd:FileKind>
+                                            <ehd:FileKind ehd:numberValue="1060" ehd:textValue="ANY_MATERIAL">
+                            <ehd:FileName>screenshots.pdf</ehd:FileName>
+                        </ehd:FileKind>
+                                            <ehd:FileKind ehd:numberValue="1060" ehd:textValue="ANY_MATERIAL">
+                            <ehd:FileName>deposited_listing.pdf</ehd:FileName>
+                        </ehd:FileKind>
+                                                                                                </ehd:DirectoryKind>
+                                                                                            </ehd:EHDSpec>
+
+        <tns:AdditionalDetails>
+                                                <tns:ServiceSubCode>RegistrationProg</tns:ServiceSubCode>
+                                                                                                                                                    <tns:Online> true </tns:Online>
+    </tns:AdditionalDetails>
+</tns:RuptoRequest>
