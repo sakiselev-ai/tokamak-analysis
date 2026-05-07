@@ -103,7 +103,7 @@ export default function DashboardPage() {
                   </td>
                   <td>{m.metrics_json?.accuracy != null ? m.metrics_json.accuracy.toFixed(4) : '\u2014'}</td>
                   <td>{m.metrics_json?.f1 != null ? m.metrics_json.f1.toFixed(4) : '\u2014'}</td>
-                  <td>{m.metrics_json?.auc != null ? m.metrics_json.auc.toFixed(4) : '\u2014'}</td>
+                  <td>{(m.metrics_json?.auc_roc ?? m.metrics_json?.auc) != null ? (m.metrics_json.auc_roc ?? m.metrics_json.auc).toFixed(4) : '\u2014'}</td>
                   <td>
                     <span className={`badge ${m.is_active ? 'badge-success' : 'badge-neutral'}`}>
                       {m.is_active ? 'Активна' : 'Неактивна'}
