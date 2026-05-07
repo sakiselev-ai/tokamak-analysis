@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Токамак-Анализ: Пользовательские кейсы — НИЯУ МИФИ</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    color: #1a1a2e;
+    background: #f5f5f5;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ===== Slide Container ===== */
+  .slide {
+    width: 960px;
+    min-height: 720px;
+    margin: 30px auto;
+    background: #ffffff;
+    padding: 56px 64px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    overflow: hidden;
+  }
+
+  .slide:last-child { page-break-after: auto; }
+
+  /* ===== Slide number ===== */
+  .slide-num {
+    position: absolute;
+    bottom: 18px;
+    right: 28px;
+    font-size: 13px;
+    color: #999;
+  }
+
+  /* ===== Typography ===== */
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 24px;
+    border-bottom: 3px solid #c0392b;
+    padding-bottom: 10px;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 10px;
+  }
+
+  p, li {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #2c3e50;
+  }
+
+  ul { padding-left: 24px; margin-bottom: 14px; }
+  ol { padding-left: 24px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; }
+  strong { color: #1a1a2e; }
+
+  /* ===== Title Slide ===== */
+  .slide.title-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  .slide.title-slide h1 {
+    font-size: 36px;
+    color: #ffffff;
+    border-bottom: none;
+    margin-bottom: 12px;
+  }
+  .slide.title-slide .subtitle {
+    font-size: 22px;
+    color: #e74c3c;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .slide.title-slide .institution {
+    font-size: 18px;
+    color: #bdc3c7;
+    margin-top: 24px;
+  }
+  .slide.title-slide .year {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-top: 6px;
+  }
+  .slide.title-slide a {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 16px;
+  }
+
+  /* ===== End slide ===== */
+  .slide.end-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  .slide.end-slide h1 {
+    font-size: 36px;
+    color: #fff;
+    border-bottom: none;
+  }
+  .slide.end-slide p, .slide.end-slide a {
+    color: #bdc3c7;
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+  .slide.end-slide a { color: #3498db; text-decoration: none; }
+
+  /* ===== Tables ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 15px;
+  }
+  th {
+    background: #c0392b;
+    color: #fff;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  .highlight-cell { font-weight: 700; color: #c0392b; }
+
+  /* ===== Architecture Diagram ===== */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0;
+  }
+  .arch-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 100px;
+    color: #fff;
+  }
+  .arch-box.user { background: #7f8c8d; }
+  .arch-box.proxy { background: #2c3e50; }
+  .arch-box.front { background: #2980b9; }
+  .arch-box.back { background: #27ae60; }
+  .arch-box.ml { background: #8e44ad; }
+  .arch-box.db { background: #d35400; }
+  .arch-box.cache { background: #c0392b; }
+  .arch-box.storage { background: #16a085; }
+  .arch-box.worker { background: #e67e22; }
+  .arch-box.monitor { background: #34495e; }
+
+  .arch-arrow {
+    font-size: 22px;
+    color: #7f8c8d;
+    font-weight: bold;
+  }
+  .arch-arrow-down {
+    font-size: 20px;
+    color: #7f8c8d;
+    text-align: center;
+  }
+  .arch-label {
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+    margin-top: -6px;
+  }
+
+  /* ===== Two columns ===== */
+  .cols {
+    display: flex;
+    gap: 32px;
+  }
+  .col { flex: 1; }
+
+  /* ===== Metric cards ===== */
+  .metrics-row {
+    display: flex;
+    gap: 16px;
+    margin: 14px 0;
+  }
+  .metric-card {
+    flex: 1;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .metric-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #c0392b;
+  }
+  .metric-card .label {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-top: 4px;
+  }
+
+  /* ===== Role cards ===== */
+  .role-card {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid #c0392b;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .role-card h3 {
+    margin-bottom: 8px;
+    color: #c0392b;
+  }
+  .role-card ul {
+    margin-bottom: 0;
+  }
+
+  /* ===== Step list ===== */
+  .step-list {
+    counter-reset: step;
+    padding-left: 0;
+    list-style: none;
+  }
+  .step-list li {
+    counter-increment: step;
+    padding: 8px 12px 8px 44px;
+    position: relative;
+    margin-bottom: 4px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #c0392b;
+  }
+  .step-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    width: 22px;
+    height: 22px;
+    background: #c0392b;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 22px;
+  }
+
+  /* ===== Flow diagram ===== */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    background: #ecf0f1;
+    border: 2px solid #bdc3c7;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+    min-width: 90px;
+  }
+  .flow-step.active { border-color: #c0392b; background: #fdf2f2; }
+  .flow-arrow { font-size: 18px; color: #95a5a6; }
+
+  /* ===== Check list ===== */
+  .check-list li {
+    list-style: none;
+    padding-left: 4px;
+  }
+  .check-list li::before {
+    content: "\2713\0020";
+    color: #27ae60;
+    font-weight: bold;
+  }
+
+  /* ===== Links list ===== */
+  .link-list {
+    list-style: none;
+    padding-left: 0;
+  }
+  .link-list li {
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  .link-list li strong {
+    display: inline-block;
+    width: 130px;
+  }
+  .link-list li a {
+    color: #2980b9;
+    text-decoration: none;
+  }
+  .link-list li code {
+    background: #ecf0f1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #c0392b;
+  }
+
+  /* ===== Print ===== */
+  @media print {
+    body { background: #fff; }
+    .slide {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+      min-height: 100vh;
+      padding: 48px 56px;
+      page-break-inside: avoid;
+    }
+  }
+
+  /* ===== Responsive fallback ===== */
+  @media screen and (max-width: 1000px) {
+    .slide {
+      width: 100%;
+      min-height: auto;
+      margin: 16px 0;
+      padding: 32px 28px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide title-slide">
+  <h1>Токамак-Анализ: Пользовательские кейсы и сценарии использования</h1>
+  <div class="subtitle">Tokamak Analysis Platform</div>
+  <div class="institution">НИЯУ МИФИ — Национальный исследовательский ядерный университет, 2026</div>
+  <div class="year"><a href="https://tokamak-ai.ru">https://tokamak-ai.ru</a></div>
+  <span class="slide-num" style="color:#7f8c8d;">1</span>
+</div>
+
+<!-- ==================== SLIDE 2: Roles ==================== -->
+<div class="slide">
+  <h1>Роли пользователей</h1>
+  <p style="margin-bottom:18px;">Система поддерживает три роли с различными правами доступа (RBAC):</p>
+
+  <div class="role-card">
+    <h3>Исследователь (researcher)</h3>
+    <ul>
+      <li>Загрузка экспериментальных данных из FAIR-MAST</li>
+      <li>Интерактивная визуализация временных рядов (Plotly.js)</li>
+      <li>Классификация плазменного режима (stable / unstable)</li>
+      <li>Экспорт результатов в CSV / JSON</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <h3>Инженер токамака (engineer)</h3>
+    <ul>
+      <li>Предсказание срывов плазмы с визуализацией вероятности</li>
+      <li>Физически обоснованные рекомендации по стабилизации</li>
+      <li>Настройка порогов срабатывания предупреждений</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <h3>Администратор (admin)</h3>
+    <ul>
+      <li>Управление пользователями: создание, смена ролей, деактивация</li>
+      <li>Аудит-лог всех действий пользователей (67+ записей)</li>
+      <li>Мониторинг: Grafana-дашборды, Prometheus-алерты, Telegram-бот</li>
+    </ul>
+  </div>
+
+  <span class="slide-num">2</span>
+</div>
+
+<!-- ==================== SLIDE 3: Case 1 ==================== -->
+<div class="slide">
+  <h1>Кейс 1 — Исследователь анализирует выстрел</h1>
+
+  <ol class="step-list">
+    <li>Регистрация в системе (<code>admin@mephi.ru</code>, согласие на обработку ПДн по 152-ФЗ)</li>
+    <li>Ввод Shot ID на странице экспериментов (например, <strong>11700</strong>)</li>
+    <li>Загрузка данных из FAIR-MAST (S3 / Zarr, ~6 сек на предобработку 229 сигналов)</li>
+    <li>Визуализация временных рядов параметров плазмы (Plotly: зум, hover, выбор сигналов)</li>
+    <li>Классификация плазменного режима: <strong>stable / unstable</strong> + confidence score</li>
+    <li>Экспорт данных и результатов в CSV или JSON</li>
+  </ol>
+
+  <div class="flow" style="margin-top:20px;">
+    <div class="flow-step active">Регистрация</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Shot ID</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step active">Загрузка</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Визуализация</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step active">Классификация</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Экспорт</div>
+  </div>
+
+  <span class="slide-num">3</span>
+</div>
+
+<!-- ==================== SLIDE 4: Case 2 ==================== -->
+<div class="slide">
+  <h1>Кейс 2 — Инженер предсказывает срыв</h1>
+
+  <ol class="step-list">
+    <li>Вход в систему с ролью <strong>engineer</strong></li>
+    <li>Выбор загруженного эксперимента из списка</li>
+    <li>Запуск предсказания срыва (кнопка &laquo;Предсказать срыв&raquo;)</li>
+    <li>График вероятности срыва во времени (<strong>DisruptionChart</strong>, Plotly.js)</li>
+    <li>Порог срабатывания предупреждения (красная зона на графике)</li>
+    <li>Рекомендации по стабилизации: снижение тока, газонапуск, коррекция формы плазмы</li>
+    <li>Настройка порога: Settings &rarr; threshold (персональный для каждого пользователя)</li>
+  </ol>
+
+  <div class="cols" style="margin-top:16px;">
+    <div class="col">
+      <h3>Рекомендации системы</h3>
+      <ul>
+        <li>Снижение тока плазмы (I<sub>p</sub>)</li>
+        <li>Увеличение газонапуска</li>
+        <li>Коррекция формы плазмы</li>
+        <li>Физически обоснованы на основе feature importance</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Визуализация</h3>
+      <ul>
+        <li>Временная шкала вероятности срыва</li>
+        <li>Пороговая линия (настраиваемая)</li>
+        <li>Зелёная / жёлтая / красная зоны</li>
+        <li>Интерактивный hover с точными значениями</li>
+      </ul>
+    </div>
+  </div>
+
+  <span class="slide-num">4</span>
+</div>
+
+<!-- ==================== SLIDE 5: Case 3 ==================== -->
+<div class="slide">
+  <h1>Кейс 3 — Обучение новой модели</h1>
+
+  <ol class="step-list">
+    <li>Страница <strong>Training</strong> &rarr; выбор архитектуры: Random Forest / LSTM / Transformer</li>
+    <li>Настройка гиперпараметров (n_estimators, num_layers, attention_heads и др.)</li>
+    <li>Запуск обучения (асинхронно через <strong>Celery</strong>, не блокирует UI)</li>
+    <li>Отслеживание прогресса в реальном времени (polling каждые 3 сек)</li>
+    <li>Просмотр финальных метрик: <strong>accuracy, F1, AUC-ROC</strong></li>
+    <li>Активация лучшей версии модели для использования в предсказаниях</li>
+  </ol>
+
+  <div class="flow" style="margin-top:16px;">
+    <div class="flow-step active">Архитектура</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Гиперпараметры</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step active">Обучение<br><span style="font-size:11px;">(Celery async)</span></div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Прогресс</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step active">Метрики</div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step">Активация</div>
+  </div>
+
+  <p style="margin-top:14px; font-size:14px; color:#7f8c8d;">Модели версионируются и хранятся в MinIO (S3-совместимое хранилище). Каждый запуск обучения сохраняет артефакты и метрики.</p>
+  <span class="slide-num">5</span>
+</div>
+
+<!-- ==================== SLIDE 6: Case 4 ==================== -->
+<div class="slide">
+  <h1>Кейс 4 — Пакетная обработка</h1>
+
+  <ol class="step-list">
+    <li>Страница <strong>Batch</strong> &rarr; ввод диапазона Shot ID (например, <strong>11700 — 11720</strong>)</li>
+    <li>Массовая загрузка данных из FAIR-MAST (параллельная обработка)</li>
+    <li><strong>Batch classify</strong> &rarr; таблица результатов классификации для всех выстрелов</li>
+    <li><strong>Batch disruption</strong> &rarr; сводка предсказаний срывов по всем выстрелам</li>
+  </ol>
+
+  <div class="cols" style="margin-top:24px;">
+    <div class="col">
+      <h3>Входные данные</h3>
+      <table>
+        <tr><th>Параметр</th><th>Значение</th></tr>
+        <tr><td>Shot ID (от)</td><td>11700</td></tr>
+        <tr><td>Shot ID (до)</td><td>11720</td></tr>
+        <tr><td>Количество</td><td>21 выстрел</td></tr>
+        <tr><td>Источник</td><td>FAIR-MAST S3</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <h3>Результат</h3>
+      <table>
+        <tr><th>Shot ID</th><th>Класс</th><th>Confidence</th></tr>
+        <tr><td>11700</td><td class="highlight-cell">unstable</td><td>94.2%</td></tr>
+        <tr><td>11701</td><td>stable</td><td>87.6%</td></tr>
+        <tr><td>11702</td><td class="highlight-cell">unstable</td><td>91.3%</td></tr>
+        <tr><td colspan="3" style="text-align:center; color:#7f8c8d;">...</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <span class="slide-num">6</span>
+</div>
+
+<!-- ==================== SLIDE 7: Case 5 ==================== -->
+<div class="slide">
+  <h1>Кейс 5 — Администрирование</h1>
+
+  <ol class="step-list">
+    <li>Управление пользователями: <code>/admin/users</code> &mdash; список всех аккаунтов</li>
+    <li>Смена ролей: researcher &harr; engineer &harr; admin</li>
+    <li>Деактивация аккаунтов (soft delete, соответствие 152-ФЗ)</li>
+    <li>Просмотр аудит-лога: <strong>67+ записей</strong> всех действий с IP-адресами</li>
+    <li>Мониторинг: <strong>Grafana</strong>-дашборды, <strong>Prometheus</strong>-алерты, <strong>Telegram</strong>-бот</li>
+  </ol>
+
+  <div class="cols" style="margin-top:20px;">
+    <div class="col">
+      <h3>Аудит-лог</h3>
+      <ul>
+        <li>Авторизации и регистрации</li>
+        <li>Загрузки экспериментов</li>
+        <li>Запуски предсказаний</li>
+        <li>Изменения ролей и настроек</li>
+        <li>IP-адрес каждого действия</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Мониторинг (10 алертов)</h3>
+      <ul>
+        <li>APIDown, MLServiceDown</li>
+        <li>HighLatency, HighErrorRate</li>
+        <li>DiskSpace, PostgresDown</li>
+        <li>LongTraining, AccuracyDrift</li>
+        <li>HighMemory, CeleryBacklog</li>
+      </ul>
+    </div>
+  </div>
+
+  <span class="slide-num">7</span>
+</div>
+
+<!-- ==================== SLIDE 8: Architecture ==================== -->
+<div class="slide">
+  <h1>Архитектура потоков данных</h1>
+
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box user">Браузер</div>
+    </div>
+    <div class="arch-arrow-down">&#9660;</div>
+
+    <div class="arch-row">
+      <div class="arch-box proxy">Nginx (reverse proxy)</div>
+    </div>
+    <div class="arch-arrow-down">&#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660;</div>
+
+    <div class="arch-row">
+      <div class="arch-box front">Frontend<br><span style="font-size:11px;">(React 18)</span></div>
+      <div class="arch-box back">Backend<br><span style="font-size:11px;">(FastAPI)</span></div>
+    </div>
+    <div class="arch-arrow-down">&#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660;</div>
+
+    <div class="arch-row">
+      <div class="arch-box ml">ML Service<br><span style="font-size:11px;">(PyTorch / sklearn)</span></div>
+      <div class="arch-box worker">Celery Worker<br><span style="font-size:11px;">(обучение async)</span></div>
+      <div class="arch-box storage">FAIR-MAST S3<br><span style="font-size:11px;">(загрузка данных)</span></div>
+    </div>
+    <div class="arch-arrow-down">&#9660; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &#9660;</div>
+
+    <div class="arch-row">
+      <div class="arch-box db">PostgreSQL<br><span style="font-size:11px;">(данные)</span></div>
+      <div class="arch-box cache">Redis<br><span style="font-size:11px;">(кэш / очереди)</span></div>
+      <div class="arch-box storage">MinIO<br><span style="font-size:11px;">(модели S3)</span></div>
+    </div>
+  </div>
+
+  <p style="text-align:center; font-size:14px; color:#7f8c8d; margin-top:12px;">
+    <strong>12 Docker-сервисов</strong> &middot; <strong>4 сети</strong> &middot; Predict: ML Service &rarr; Backend &rarr; Frontend &middot; Train: Celery Worker (async)
+  </p>
+
+  <span class="slide-num">8</span>
+</div>
+
+<!-- ==================== SLIDE 9: API Endpoints ==================== -->
+<div class="slide">
+  <h1>API endpoints по кейсам</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Кейс</th>
+        <th>Endpoint</th>
+        <th>Метод</th>
+        <th>Описание</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Загрузка данных</td>
+        <td><code>/api/v1/experiments/load</code></td>
+        <td><strong>POST</strong></td>
+        <td>Загрузка выстрела из FAIR-MAST</td>
+      </tr>
+      <tr>
+        <td>Визуализация</td>
+        <td><code>/api/v1/experiments/{id}/timeseries</code></td>
+        <td><strong>GET</strong></td>
+        <td>Временные ряды параметров</td>
+      </tr>
+      <tr>
+        <td>Классификация</td>
+        <td><code>/api/v1/predictions/classify</code></td>
+        <td><strong>POST</strong></td>
+        <td>Stable / unstable + confidence</td>
+      </tr>
+      <tr>
+        <td>Предсказание срыва</td>
+        <td><code>/api/v1/predictions/disruption</code></td>
+        <td><strong>POST</strong></td>
+        <td>Вероятность срыва по времени</td>
+      </tr>
+      <tr>
+        <td>Обучение модели</td>
+        <td><code>/api/v1/models/train</code></td>
+        <td><strong>POST</strong></td>
+        <td>Асинхронный запуск через Celery</td>
+      </tr>
+      <tr>
+        <td>Экспорт данных</td>
+        <td><code>/api/v1/experiments/{id}/export</code></td>
+        <td><strong>GET</strong></td>
+        <td>CSV / JSON экспорт</td>
+      </tr>
+      <tr>
+        <td>Пакетная загрузка</td>
+        <td><code>/api/v1/experiments/batch</code></td>
+        <td><strong>POST</strong></td>
+        <td>Массовая загрузка выстрелов</td>
+      </tr>
+      <tr>
+        <td>Пакетная классификация</td>
+        <td><code>/api/v1/predictions/batch-classify</code></td>
+        <td><strong>POST</strong></td>
+        <td>Классификация нескольких выстрелов</td>
+      </tr>
+      <tr>
+        <td>Управление пользователями</td>
+        <td><code>/api/v1/admin/users</code></td>
+        <td><strong>GET</strong></td>
+        <td>Список пользователей (admin)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:14px; color:#7f8c8d; margin-top:8px;">Всего <strong>30 API endpoints</strong>. Полная документация: <a href="https://tokamak-ai.ru/docs" style="color:#2980b9;">tokamak-ai.ru/docs</a> (Swagger UI)</p>
+
+  <span class="slide-num">9</span>
+</div>
+
+<!-- ==================== SLIDE 10: Metrics ==================== -->
+<div class="slide">
+  <h1>Метрики качества</h1>
+
+  <h2>ML-модели (полное обучение, 50 эпох)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Модель</th>
+        <th>Задача</th>
+        <th>Метрика</th>
+        <th>Значение</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>bi-LSTM+Attention</strong></td>
+        <td>Классификация</td>
+        <td>AUC-ROC</td>
+        <td class="highlight-cell">0.9938</td>
+      </tr>
+      <tr>
+        <td><strong>Random Forest</strong></td>
+        <td>Классификация</td>
+        <td>AUC-ROC</td>
+        <td class="highlight-cell">0.9677</td>
+      </tr>
+      <tr>
+        <td><strong>Transformer</strong></td>
+        <td>Классификация</td>
+        <td>AUC-ROC</td>
+        <td class="highlight-cell">0.9415</td>
+      </tr>
+      <tr>
+        <td><strong>LSTM Forecaster</strong></td>
+        <td>Прогнозирование</td>
+        <td>NRMSE</td>
+        <td class="highlight-cell">0.143</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:18px;">Качество кода и тестирование</h2>
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="value">205</div>
+      <div class="label">автотестов</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">81%</div>
+      <div class="label">покрытие кода</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">17/17</div>
+      <div class="label">функц. требований</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">15/16</div>
+      <div class="label">OWASP проверок</div>
+    </div>
+  </div>
+
+  <p style="font-size:14px; color:#7f8c8d;">LSTM Forecaster NRMSE 0.143 превосходит базовый уровень TokaMark Group 1 (0.163)</p>
+
+  <span class="slide-num">10</span>
+</div>
+
+<!-- ==================== SLIDE 11: Links ==================== -->
+<div class="slide">
+  <h1>Демо-ссылки и доступ</h1>
+
+  <ul class="link-list" style="margin-top:20px;">
+    <li><strong>Сайт:</strong> <a href="https://tokamak-ai.ru">https://tokamak-ai.ru</a></li>
+    <li><strong>GitHub:</strong> <a href="https://github.com/sakiselev-ai/tokamak-analysis">https://github.com/sakiselev-ai/tokamak-analysis</a></li>
+    <li><strong>API docs:</strong> <a href="https://tokamak-ai.ru/docs">https://tokamak-ai.ru/docs</a> (Swagger UI)</li>
+    <li><strong>Логин:</strong> <code>admin@mephi.ru</code> / <code>admin123</code></li>
+  </ul>
+
+  <div class="cols" style="margin-top:30px;">
+    <div class="col">
+      <h3>Быстрый старт</h3>
+      <ol>
+        <li>Откройте <a href="https://tokamak-ai.ru" style="color:#2980b9;">tokamak-ai.ru</a></li>
+        <li>Войдите как admin@mephi.ru</li>
+        <li>Введите Shot ID (например, 11700)</li>
+        <li>Нажмите &laquo;Загрузить&raquo;</li>
+        <li>Используйте визуализацию и ML</li>
+      </ol>
+    </div>
+    <div class="col">
+      <h3>Локальный запуск</h3>
+      <ol>
+        <li><code>git clone</code> репозитория</li>
+        <li><code>docker compose up -d</code></li>
+        <li>12 сервисов поднимаются за ~2 мин</li>
+        <li>Откройте <code>http://localhost</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <span class="slide-num">11</span>
+</div>
+
+<!-- ==================== SLIDE 12: Thank You ==================== -->
+<div class="slide end-slide">
+  <h1>Спасибо за внимание!</h1>
+  <p style="margin-top:30px; font-size:18px; color:#ecf0f1;">Вопросы?</p>
+  <p style="margin-top:40px;">НИЯУ МИФИ, 2026</p>
+  <p><a href="https://tokamak-ai.ru">tokamak-ai.ru</a> &middot; <a href="https://github.com/sakiselev-ai/tokamak-analysis">GitHub</a></p>
+  <span class="slide-num" style="color:#7f8c8d;">12</span>
+</div>
+
+</body>
+</html>
