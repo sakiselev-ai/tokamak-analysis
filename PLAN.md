@@ -44,7 +44,8 @@
 | GitHub repo | https://github.com/sakiselev-ai/tokamak-analysis | ✅ public, MIT, CI |
 | GitHub Release | https://github.com/sakiselev-ai/tokamak-analysis/releases/tag/v1.0.0 | ✅ v1.0.0 (обновить метрики в W12) |
 | HTTPS сайт | https://tokamak-ai.ru | ✅ SSL Let's Encrypt |
-| Препринт PDF | `paper/preprint.pdf` | ✅ 10 стр, реальные метрики |
+| Препринт PDF | `paper/preprint.pdf` | ✅ 10 стр, LSTM AUC 0.9938 |
+| Kaggle notebook | `notebooks/kaggle_disruption_prediction.ipynb` | ✅ Создан, ⚠️ не опубликован на kaggle.com |
 | Презентация | `presentation/index.html` | ✅ 13 слайдов |
 | Роспатент листинг | `rospatent/deposited_listing.txt` | ✅ 1666 строк |
 | Инструкция ФИПС | `rospatent/README_FINAL.md` | ✅ |
@@ -74,6 +75,7 @@
 |---|--------|---------|------------|
 | **1** | **Подать Роспатент** | 10-12 мая | Госпошлина 3000р, docs готовы в `rospatent/` |
 | **2** | **Отправить письмо ЛаПлаз** | 07-10 мая | Шаблон в `Комплект_документов_Код_МИФИста.docx`, Часть 3 |
+| **3** | **Опубликовать Kaggle notebook** | W3 | kaggle.com → New Notebook → Upload `notebooks/kaggle_disruption_prediction.ipynb` → Save & Run All → Make Public |
 
 ---
 
@@ -86,6 +88,11 @@
 | ✅ | SSL Let's Encrypt | HTTPS работает |
 | ✅ | Test coverage ≥80% | 81%, 205 тестов |
 | ✅ | TokaMark forecasting модели | NRMSE 0.143 / 0.196 |
+| ✅ | Полное обучение classification (50 эпох) | LSTM AUC 0.9938, RF 0.9677, Transformer 0.9415 |
+| ✅ | Препринт обновлён финальными метриками | PDF 331 KB |
+| ✅ | Release v1.0.0 обновлён | Финальные метрики |
+| ✅ | Kaggle notebook создан | `notebooks/kaggle_disruption_prediction.ipynb` |
+| ⚠️ | Kaggle notebook опубликован | **Пользователь**: upload на kaggle.com, Make Public |
 | ⚠️ | Письмо ЛаПлаз | Не отправлено |
 | ⚠️ | Роспатент | Не подано |
 
@@ -95,9 +102,10 @@
 
 | # | Задача | Кто | Время |
 |---|--------|-----|-------|
-| 1 | Kaggle notebook «Disruption Prediction on FAIR-MAST» | Claude | 1 день |
+| 1 | ~~Kaggle notebook~~ | ✅ Создан |
+| 1a | **Опубликовать Kaggle notebook** | **Пользователь**: kaggle.com → Upload → Make Public |
 | 2 | Скриншоты UI для Роспатент (5-10 шт) | Claude | 30 мин |
-| 3 | Обучение forecasting на 500 shots (полное, с нормализацией) | Claude | 2 часа |
+| 3 | ~~Обучение forecasting~~ | ✅ NRMSE 0.143 |
 | 4 | Обновить презентацию TokaMark результатами | Claude | 30 мин |
 
 ---

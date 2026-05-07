@@ -154,6 +154,7 @@ deploy/
 ├── setup_backups.sh           # Cron setup for daily backups
 └── backup.sh                  # pg_dump + encrypt + MinIO upload + retention (7 daily, 4 weekly)
 
+notebooks/                     # kaggle_disruption_prediction.ipynb (self-contained, runs on Kaggle)
 e2e/tests/                     # 6 Playwright specs: auth, experiments, export, predictions, training + helpers
 paper/                         # preprint.tex + references.bib (25 citations) + preprint.pdf (10 pages)
 rospatent/                     # referat.md, application_form.md, deposited_code.py, deposited_listing.txt, README_FINAL.md
@@ -336,6 +337,7 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 |----------|------|--------|
 | Preprint PDF | `paper/preprint.pdf` | 10 pages, real metrics, 25 citations |
 | Presentation | `presentation/index.html` | 13 slides, standalone HTML, printable |
+| Kaggle notebook | `notebooks/kaggle_disruption_prediction.ipynb` | 10 sections, self-contained, publish on kaggle.com |
 | Rospatent listing | `rospatent/deposited_listing.txt` | 1666 lines, 10 source files |
 | Rospatent instructions | `rospatent/README_FINAL.md` | FIPS submission checklist |
 | User guide | `docs/user-guide.md` | Full guide in Russian |
