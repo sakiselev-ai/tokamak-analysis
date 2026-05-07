@@ -193,19 +193,20 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 **Key findings:**
 - Random split gives inflated metrics (1.0 for RF/Transformer) — temporal validation is essential
 - RF most robust to temporal shift (AUC 0.969 temporal)
-- LSTM underperforms in quick mode (5 epochs) — needs full training (50 epochs)
-- Strong class imbalance (86.8% disruptions) may inflate RF metrics
-- Results saved: `results/full_experiment.json`, `results/temporal_validation.json` on VPS
+- **Full training results (50 epochs, normalized):** LSTM AUC 0.9938, RF 0.9677, Transformer 0.9415
+- LSTM Forecaster NRMSE 0.143 (beats TokaMark Group 1 baseline 0.163)
+- Results saved: `results/classify_full.json`, `results/forecast_full.json` on VPS
+- Kaggle notebook: `notebooks/kaggle_disruption_prediction.ipynb`
 
 ## Project Metrics
 
-- **25 commits** on main branch, pushed to GitHub
-- **195+ files**, **~22,500 LOC total**
-- **90+ Python files** (~10,500 LOC), **29 TypeScript files** (~3,100 LOC)
+- **35 commits** on main branch, pushed to GitHub
+- **215+ files**, **~24,000 LOC total**
+- **90+ Python files** (~12,100 LOC), **29 TypeScript files** (~3,100 LOC)
 - **Infrastructure**: ~1,100 LOC (YAML/JSON/conf)
-- **Documentation**: ~7,400 LOC (MD/TeX/bib/HTML)
-- **30 API endpoints**, **10 ORM models**, **3 ML models**
-- **170 tests** (139 backend + 31 ML + 21 E2E), **backend coverage 81%** (NFR-011 ✅)
+- **Documentation**: ~7,700 LOC (MD/TeX/bib/HTML + Kaggle notebook)
+- **30 API endpoints**, **10 ORM models**, **5 ML models** (3 classification + 2 forecasting)
+- **205 tests** (139 backend + 45 ML + 21 E2E), **backend coverage 81%** (NFR-011 ✅)
 - **12 Docker services**, **4 networks**, **3 Alembic migrations**
 - **10 Prometheus alerts**, **2 Grafana dashboards**
 - **All 17 functional requirements (FR-001–FR-017) covered**
