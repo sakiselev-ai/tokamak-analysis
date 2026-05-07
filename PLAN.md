@@ -115,8 +115,9 @@
 | # | Задача | Кто |
 |---|--------|-----|
 | 5 | Полное обучение классификации LSTM (50 эпох, реальные данные) | Claude |
-| 6 | TokaMark submission (когда лидерборд откроется, KDD Aug 2026) | Claude |
-| 7 | DisruptionBench research + submission | Claude |
+| 6 | TokaMark: лидерборд НЕ открыт (проверено 07.05). Self-eval через GitHub repo. KDD Aug 2026 | Claude |
+| 6a | DisruptionBench: лидерборд НЕТ. Framework на GitHub (MIT-PSFC). 9 задач, 3 токамака. Запустить локально | Claude |
+| 7 | Запустить DisruptionBench framework с нашими моделями → метрики для препринта | Claude |
 | 8 | Обновить препринт финальными метриками | Claude |
 
 **Контрольная точка W6 (09 июня):** Целевые метрики достигнуты.
