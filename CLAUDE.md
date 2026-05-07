@@ -24,11 +24,13 @@ and disruption prediction.
 - **SSH**: `ssh root@186.246.31.81`
 - **Project path**: `/opt/tokamak-analysis`
 - **OS**: Ubuntu 24.04, x86_64, 48GB disk (24GB free)
+- **Domain**: tokamak-ai.ru
+- **HTTPS**: https://tokamak-ai.ru (Let's Encrypt, TLS 1.2/1.3, expires 2026-08-05)
 - **Services**: 12 Docker containers running (all healthy)
-- **Frontend**: http://186.246.31.81/
-- **API docs**: http://186.246.31.81/docs
+- **Frontend**: https://tokamak-ai.ru/
+- **API docs**: https://tokamak-ai.ru/docs
 - **Grafana**: http://186.246.31.81:3001/
-- **DB**: 5 users, 5 models, 3 experiments (shots 11700, 11750, 30420), 4+ predictions, 5 training runs (1 completed RF, 4 failed LSTM/Transformer)
+- **DB**: 5 users, 5 models, 7 experiments, 16 predictions, 67 audit records, 5 training runs
 - **Trained models on disk**: `rf_baseline.joblib`, `lstm_attention.pt`, `transformer.pt` + 7 checkpoints
 - **Backups**: cron daily at 3:00 → pg_dump + encrypt + MinIO
 - **Not a git repo on VPS** — sync via `rsync` or `scp`, then `docker compose build`
@@ -313,8 +315,9 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - After `docker compose build`, run `retrain_models.py` inside container (COPY bakes in old host models)
 - **Actual ML inference: ~19ms** — the 6s total latency is `prepare_features` interpolating 229 raw signals, not the model
 - Experiment list endpoint uses `noload(Experiment.timeseries)` — timeseries loaded separately via `/{id}/timeseries`
-- **23 commits**, **~21,000 LOC**, dashboard fully functional with 7 experiments
+- **31 commits**, **~23,000 LOC**, 213 files, dashboard fully functional with 7 experiments
 - **GitHub**: https://github.com/sakiselev-ai/tokamak-analysis (public, MIT)
+- **HTTPS**: https://tokamak-ai.ru (Let's Encrypt, NFR-007 ✅)
 - **Always push after commit** — every git commit must be followed by git push
 
 ## Known Limitations
@@ -323,7 +326,7 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - **LSTM quick-mode AUC 0.867**: Needs full training (50 epochs) for production-quality results
 - **RF/Transformer P99 > 50ms target**: Need model optimization or reduced n_estimators/sequence_length
 - **Class imbalance 86.8%**: Heuristic labels skew disruption-heavy; real `cpf/disruption_time` labels preferred
-- **SSL not configured**: Needs domain name for Let's Encrypt
+- **SSL configured**: tokamak-ai.ru, Let's Encrypt, expires 2026-08-05
 
 ## Completed Artifacts
 
