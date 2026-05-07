@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+@page { size: A4; margin: 2cm; }
+body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.5; color: #000; }
+h1 { font-size: 18pt; text-align: center; margin-bottom: 5px; }
+h2 { font-size: 14pt; margin-top: 20px; }
+h3 { font-size: 13pt; margin-top: 15px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+th, td { border: 1px solid #000; padding: 5px 8px; font-size: 11pt; text-align: left; }
+th { background-color: #f0f0f0; font-weight: bold; }
+hr { border: none; border-top: 1px solid #000; margin: 15px 0; }
+code { font-family: 'Courier New', monospace; font-size: 10pt; }
+pre { font-family: 'Courier New', monospace; font-size: 9pt; white-space: pre-wrap; border: 1px solid #ccc; padding: 8px; }
+</style></head>
+<body><h1>ЗАЯВЛЕНИЕ</h1>
+<h1>о государственной регистрации программы для ЭВМ</h1>
+<h2>Форма РП</h2>
+<hr />
+<h3>1. Название программы для ЭВМ</h3>
+<p>Tokamak Analysis — ИИ-система для анализа экспериментальных данных токамаков</p>
+<h3>2. Сведения о правообладателе</h3>
+<p><strong>Полное наименование:</strong> Федеральное государственное автономное образовательное учреждение высшего образования «Национальный исследовательский ядерный университет «МИФИ» (НИЯУ МИФИ)</p>
+<p><strong>Сокращённое наименование:</strong> НИЯУ МИФИ</p>
+<p><strong>Адрес (место нахождения):</strong> 115409, г. Москва, Каширское шоссе, д. 31</p>
+<p><strong>ОГРН:</strong> 1027739028161</p>
+<p><strong>ИНН:</strong> 7724068140</p>
+<p><strong>КПП:</strong> 772401001</p>
+<p><strong>Телефон:</strong> [указать телефон]</p>
+<p><strong>Электронная почта:</strong> [указать e-mail]</p>
+<h3>3. Сведения об авторах</h3>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Фамилия, имя, отчество</th>
+<th>Гражданство</th>
+<th>Адрес</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>[ФИО автора 1]</td>
+<td>Российская Федерация</td>
+<td>[адрес]</td>
+</tr>
+<tr>
+<td>2</td>
+<td>[ФИО автора 2]</td>
+<td>Российская Федерация</td>
+<td>[адрес]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>[ФИО автора 3]</td>
+<td>Российская Федерация</td>
+<td>[адрес]</td>
+</tr>
+</tbody>
+</table>
+<h3>4. Год создания программы</h3>
+<p>2026</p>
+<h3>5. Год обнародования программы (если программа была обнародована)</h3>
+<p>2026</p>
+<h3>6. Страна и дата первого выпуска в свет (если программа была выпущена в свет)</h3>
+<p>Российская Федерация, «<strong><em>» </em></strong><strong><em>_</em></strong>__ 2026 г.</p>
+<h3>7. Язык программирования</h3>
+<p>Python 3.11, TypeScript 5.6</p>
+<h3>8. Операционная система</h3>
+<p>Linux (Ubuntu 22.04/24.04), кроссплатформенная (Docker)</p>
+<h3>9. Объём программы</h3>
+<p>~24 000 строк исходного кода (Python ~12 100, TypeScript ~3 100, инфраструктура ~1 100)</p>
+<h3>10. Технические характеристики</h3>
+<p><strong>Архитектура:</strong> Микросервисная (модульный монолит + выделенный ML-сервис), 12 контейнеров Docker Compose, 4 изолированные сети.</p>
+<p><strong>Серверная часть (бэкенд):</strong> Python 3.11, FastAPI, SQLAlchemy (async ORM), Celery (асинхронные задачи), Redis 7 (брокер сообщений).</p>
+<p><strong>ML-сервис:</strong> PyTorch 2.x (bi-LSTM, Transformer), scikit-learn (Random Forest), единый протокол ModelInterface.</p>
+<p><strong>Веб-интерфейс (фронтенд):</strong> React 18, TypeScript 5.6, Vite, Plotly.js, Zustand.</p>
+<p><strong>Базы данных и хранилище:</strong> PostgreSQL 16, MinIO (S3-совместимое объектное хранилище для артефактов моделей).</p>
+<p><strong>Инфраструктура:</strong> Docker Compose, Nginx (обратный прокси), Prometheus + Grafana (мониторинг).</p>
+<p><strong>Ключевые показатели качества:</strong> лучшая модель (bi-LSTM + Attention) — точность 97.3%, F1 = 0.973, AUC-ROC = 0.9938; время вывода (inference) — 19 мс. Модель forecasting (LSTM Forecaster) достигает NRMSE = 0.143 на бенчмарке TokaMark.</p>
+<h3>11. Предшествующая регистрация</h3>
+<p>Программа ранее не регистрировалась в Роспатенте.</p>
+<h3>12. Реферат</h3>
+<p>Реферат прилагается (см. файл <code>referat.md</code>).</p>
+<h3>13. Депонируемые материалы</h3>
+<p>Депонируемые материалы прилагаются: исходный текст программы, 50 страниц (первые и последние 25 страниц).</p>
+<hr />
+<h2>Перечень прилагаемых документов</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Наименование документа</th>
+<th>Количество листов</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Заявление (настоящий документ)</td>
+<td>2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Реферат</td>
+<td>2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Депонируемые материалы (исходный код)</td>
+<td>50</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Документ об уплате госпошлины</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Подпись</h2>
+<p>Дата: «<strong><em>» </em></strong><strong><em>_</em></strong>__ 2026 г.</p>
+<p>Подпись правообладателя (уполномоченного представителя): <strong><em>_</em></strong><strong><em>_</em></strong>_____</p>
+<p>Фамилия, имя, отчество: <strong><em>_</em></strong><strong><em>_</em></strong>_____</p>
+<p>Должность: <strong><em>_</em></strong><strong><em>_</em></strong>_____</p>
+<p>М.П.</p>
+<hr />
+<h3>Примечания</h3>
+<ul>
+<li>Госпошлина за регистрацию программы для ЭВМ составляет <strong>3 000 ₽</strong> (пп. 1 п. 1 ст. 333.30 НК РФ).</li>
+<li>Заявление подаётся в Федеральный институт промышленной собственности (ФИПС) Роспатента.</li>
+<li>Подача возможна через портал Госуслуг (gosuslugi.ru) или через сайт ФИПС (fips.ru).</li>
+</ul></body></html>
