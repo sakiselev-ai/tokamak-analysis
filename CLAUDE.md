@@ -317,6 +317,7 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - Experiment list endpoint uses `noload(Experiment.timeseries)` — timeseries loaded separately via `/{id}/timeseries`
 - **31 commits**, **~23,000 LOC**, 213 files, dashboard fully functional with 7 experiments
 - **GitHub**: https://github.com/sakiselev-ai/tokamak-analysis (public, MIT)
+- **GitHub Release**: https://github.com/sakiselev-ai/tokamak-analysis/releases/tag/v1.0.0 (обновить метрики в W12)
 - **HTTPS**: https://tokamak-ai.ru (Let's Encrypt, NFR-007 ✅)
 - **Always push after commit** — every git commit must be followed by git push
 

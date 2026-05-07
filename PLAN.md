@@ -42,6 +42,7 @@
 | Артефакт | Путь | Статус |
 |----------|------|--------|
 | GitHub repo | https://github.com/sakiselev-ai/tokamak-analysis | ✅ public, MIT, CI |
+| GitHub Release | https://github.com/sakiselev-ai/tokamak-analysis/releases/tag/v1.0.0 | ✅ v1.0.0 (обновить метрики в W12) |
 | HTTPS сайт | https://tokamak-ai.ru | ✅ SSL Let's Encrypt |
 | Препринт PDF | `paper/preprint.pdf` | ✅ 10 стр, реальные метрики |
 | Презентация | `presentation/index.html` | ✅ 13 слайдов |
@@ -132,7 +133,8 @@
 
 | # | Задача | Кто |
 |---|--------|-----|
-| 14 | GitHub Release v1.0 + git tag | Claude |
+| 14 | ~~GitHub Release v1.0 + git tag~~ | ✅ Сделано (v1.0.0, 07 мая) |
+| 14a | **Обновить GitHub Release v1.0.0** финальными метриками | Claude |
 | 15 | Обновить README: badges, demo GIF, финальные метрики | Claude |
 | 16 | Финальная компиляция препринта | Claude |
 | 17 | Проверить статус Роспатент | **Пользователь** |
