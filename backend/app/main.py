@@ -11,8 +11,6 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
 
 from app.api import admin, auth, experiments, legal, models, predictions
 from app.config import settings
@@ -24,21 +22,37 @@ from app.services.ml_client import MLServiceClient
 logger = structlog.get_logger()
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Log method, path, status code and duration for every request."""
+class RequestLoggingMiddleware:
+    """Log method, path, status code and duration for every request (pure ASGI)."""
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
         start = time.perf_counter()
-        response = await call_next(request)
+        response_status = 0
+
+        async def send_wrapper(message):
+            nonlocal response_status
+            if message["type"] == "http.response.start":
+                response_status = message["status"]
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
         duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        method = scope.get("method", "")
+        path = scope.get("path", "")
         await logger.ainfo(
             "request",
-            method=request.method,
-            path=request.url.path,
-            status=response.status_code,
+            method=method,
+            path=path,
+            status=response_status,
             duration_ms=duration_ms,
         )
-        return response
 
 
 @asynccontextmanager
