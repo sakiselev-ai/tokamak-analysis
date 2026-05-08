@@ -201,11 +201,11 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 ## Project Metrics
 
-- **35 commits** on main branch, pushed to GitHub
-- **215+ files**, **~24,000 LOC total**
-- **90+ Python files** (~12,100 LOC), **29 TypeScript files** (~3,100 LOC)
+- **56+ commits** on main branch, pushed to GitHub
+- **228+ files**, **~25,000 LOC total**
+- **Python** (~12,100 LOC), **TypeScript** (~3,100 LOC)
 - **Infrastructure**: ~1,100 LOC (YAML/JSON/conf)
-- **Documentation**: ~7,700 LOC (MD/TeX/bib/HTML + Kaggle notebook)
+- **Documentation**: ~8,500 LOC (MD/TeX/bib/HTML/notebook/system-overview)
 - **30 API endpoints**, **10 ORM models**, **5 ML models** (3 classification + 2 forecasting)
 - **205 tests** (139 backend + 45 ML + 21 E2E), **backend coverage 81%** (NFR-011 ✅)
 - **12 Docker services**, **4 networks**, **3 Alembic migrations**
@@ -317,17 +317,17 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 - After `docker compose build`, run `retrain_models.py` inside container (COPY bakes in old host models)
 - **Actual ML inference: ~19ms** — the 6s total latency is `prepare_features` interpolating 229 raw signals, not the model
 - Experiment list endpoint uses `noload(Experiment.timeseries)` — timeseries loaded separately via `/{id}/timeseries`
-- **31 commits**, **~23,000 LOC**, 213 files, dashboard fully functional with 7 experiments
+- **56+ commits**, **~25,000 LOC**, 228+ files, dashboard functional with 7 experiments
 - **GitHub**: https://github.com/sakiselev-ai/tokamak-analysis (public, MIT)
-- **GitHub Release**: https://github.com/sakiselev-ai/tokamak-analysis/releases/tag/v1.0.0 (обновить метрики в W12)
+- **GitHub Release**: https://github.com/sakiselev-ai/tokamak-analysis/releases/tag/v1.0.0
+- **Роспатент**: заявка #7325697370 подана 07.05.2026, пошлина 5000р оплачена
 - **HTTPS**: https://tokamak-ai.ru (Let's Encrypt, NFR-007 ✅)
 - **Always push after commit** — every git commit must be followed by git push
 
 ## Known Limitations
 
 - **Data preprocessing ~6s per shot**: `prepare_features` interpolates up to 229 signals from FAIR-MAST. Optimization: pre-cache features or limit signal count in backend
-- **LSTM quick-mode AUC 0.867**: Needs full training (50 epochs) for production-quality results
-- **RF/Transformer P99 > 50ms target**: Need model optimization or reduced n_estimators/sequence_length
+- **Full training completed**: LSTM AUC 0.9938 (22 epochs), RF 0.9677, Transformer 0.9415
 - **Class imbalance 86.8%**: Heuristic labels skew disruption-heavy; real `cpf/disruption_time` labels preferred
 - **SSL configured**: tokamak-ai.ru, Let's Encrypt, expires 2026-08-05
 
@@ -335,11 +335,15 @@ configs/                       # rf.yml, lstm.yml, transformer.yml (hyperparams 
 
 | Artifact | Path | Status |
 |----------|------|--------|
-| Preprint PDF | `paper/preprint.pdf` | 10 pages, real metrics, 25 citations |
-| Presentation | `presentation/index.html` | 13 slides, standalone HTML, printable |
-| Kaggle notebook | `notebooks/kaggle_disruption_prediction.ipynb` | 10 sections, self-contained, publish on kaggle.com |
-| Rospatent listing | `rospatent/deposited_listing.txt` | 1666 lines, 10 source files |
-| Rospatent instructions | `rospatent/README_FINAL.md` | FIPS submission checklist |
+| Preprint PDF | `paper/preprint.pdf` | 10 pages, LSTM AUC 0.9938, 25 citations |
+| Presentation main | `presentation/index.html` | 13 slides, standalone HTML |
+| Presentation user cases | `presentation/user-cases.html` + `.pptx` | 12 slides |
+| Kaggle notebook | `notebooks/kaggle_disruption_prediction.ipynb` | 10 sections, self-contained |
+| System overview | `docs/system-overview.md` + `.pdf` | Полная документация системы (RU) |
+| Rospatent application | `rospatent/pdf_application.pdf` | Заявка #7325697370, подана 07.05.2026 |
+| Rospatent listing | `rospatent/deposited_listing.pdf` | 30 pages, 10 source files |
+| Rospatent referat | `rospatent/referat.pdf` | 3 pages |
+| Rospatent screenshots | `rospatent/screenshots.pdf` | 9 UI screens |
 | User guide | `docs/user-guide.md` | Full guide in Russian |
 | Deployment guide | `docs/deployment-guide.md` | VPS setup, SSL, backups |
 | API reference | `docs/api-reference.md` | 30 endpoints with examples |
