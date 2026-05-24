@@ -11,7 +11,7 @@ services:
       - backend
       - frontend
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO /dev/null http://0.0.0.0:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost:80/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

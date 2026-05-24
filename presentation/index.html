@@ -523,10 +523,10 @@
 
   <h2 style="margin-top:20px;">Ключевые выводы</h2>
   <ul>
-    <li><strong>Random Forest</strong> — лучшая модель по CV AUC (0.983), минимальная дисперсия</li>
-    <li><strong>Transformer</strong> — второе место (AUC 0.938), лучшая латентность инференса</li>
-    <li><strong>LSTM</strong> — требует больше эпох обучения (5 эпох в quick mode)</li>
-    <li>Сильный дисбаланс классов (86.8% срывов) может завышать метрики RF</li>
+    <li><strong>LSTM+Attention</strong> — лучшая модель при полном обучении (AUC 0.9938, 50 эпох)</li>
+    <li><strong>Random Forest</strong> — лучший CV AUC (0.983), наиболее устойчив к временному сдвигу</li>
+    <li><strong>Transformer</strong> — второе место (AUC 0.938), лучшая обобщающая способность</li>
+    <li>Инференс: ~19 мс (чистый ML), 500 выстрелов для обучения</li>
   </ul>
   <span class="slide-num">6</span>
 </div>
@@ -711,9 +711,9 @@
     <div class="col">
       <h3>Тестирование</h3>
       <ul>
-        <li><strong>110 автотестов</strong> (unit + integration + E2E)</li>
+        <li><strong>205 автотестов</strong> (unit + integration + E2E)</li>
         <li>CI/CD через GitHub Actions</li>
-        <li>Покрытие кода 80%+</li>
+        <li>Покрытие кода 81%</li>
         <li>Линтинг: Ruff (Python), ESLint (TS)</li>
       </ul>
       <h3 style="margin-top:12px;">Мониторинг</h3>
@@ -747,12 +747,12 @@
       <tr>
         <td>Автотесты</td>
         <td>50+</td>
-        <td class="highlight-cell">110</td>
+        <td class="highlight-cell">205</td>
       </tr>
       <tr>
-        <td>CV AUC-ROC (лучшая модель)</td>
+        <td>AUC-ROC (лучшая модель)</td>
         <td>&ge; 0.90</td>
-        <td class="highlight-cell">0.983 (RF)</td>
+        <td class="highlight-cell">0.9938 (LSTM)</td>
       </tr>
       <tr>
         <td>Temporal AUC-ROC</td>
@@ -762,7 +762,7 @@
       <tr>
         <td>Латентность инференса</td>
         <td>&le; 50 мс</td>
-        <td class="highlight-cell">39 мс (LSTM)</td>
+        <td class="highlight-cell">19 мс</td>
       </tr>
       <tr>
         <td>OWASP безопасность</td>
@@ -774,7 +774,7 @@
 
   <div class="metrics-row" style="margin-top:20px;">
     <div class="metric-card">
-      <div class="value">18 100</div>
+      <div class="value">25 000</div>
       <div class="label">строк кода</div>
     </div>
     <div class="metric-card">
@@ -801,17 +801,16 @@
   <ul class="check-list">
     <li>Разработана первая в России веб-платформа для ML-анализа данных токамаков</li>
     <li>Реализованы 3 архитектуры ML: Random Forest, bi-LSTM+Attention, Transformer</li>
-    <li>Лучшая модель (RF) достигает CV AUC 0.983 и темпоральный AUC 0.969</li>
+    <li>Лучшая модель (LSTM+Attention) достигает AUC 0.9938, инференс 19 мс</li>
     <li>Полная инфраструктура: 12 Docker-сервисов, CI/CD, мониторинг, безопасность</li>
     <li>Все 17 функциональных требований выполнены</li>
   </ul>
 
   <h2 style="margin-top:20px;">Планы развития</h2>
   <ul>
-    <li>Обучение на <strong>500+ выстрелах</strong> для повышения обобщающей способности</li>
     <li><strong>Cross-tokamak validation</strong> на данных DIII-D (General Atomics)</li>
     <li>Интеграция с российскими установками <strong>МИФИСТ</strong> и <strong>Т-15МД</strong></li>
-    <li>Регистрация программы в <strong>Роспатенте</strong></li>
+    <li>Роспатент: заявка <strong>№2026600062</strong> зарегистрирована 19.05.2026</li>
     <li>Публикация на <strong>arXiv</strong> (cs.LG / physics.plasm-ph)</li>
     <li>Real-time streaming данных с токамака</li>
   </ul>
@@ -822,7 +821,8 @@
 <div class="slide end-slide">
   <h1>Спасибо за внимание!</h1>
   <p style="margin-top:30px; font-size:18px; color:#ecf0f1;">Вопросы?</p>
-  <p style="margin-top:40px;">НИЯУ МИФИ, 2026</p>
+  <p style="margin-top:30px; font-size:16px; color:#bdc3c7;">https://tokamak-ai.ru &nbsp;|&nbsp; github.com/sakiselev-ai/tokamak-analysis</p>
+  <p style="margin-top:20px;">НИЯУ МИФИ, 2026</p>
   <span class="slide-num" style="color:#7f8c8d;">13</span>
 </div>
 
