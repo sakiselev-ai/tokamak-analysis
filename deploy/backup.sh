@@ -13,8 +13,8 @@ DATE=$(date +%Y%m%d_%H%M%S)
 DAY_OF_WEEK=$(date +%u)
 BACKUP_FILE="tokamak_db_${DATE}.sql.gz.enc"
 MINIO_BUCKET="backups"
-DAILY_RETENTION=7
-WEEKLY_RETENTION=28
+DAILY_RETENTION=30
+WEEKLY_RETENTION=90
 LOG_FILE="/var/log/tokamak_backup.log"
 
 # ---------------------------------------------------------------------------
