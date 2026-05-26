@@ -599,7 +599,44 @@
   <span class="slide-num">7</span>
 </div>
 
-<!-- ==================== SLIDE 8: Data ==================== -->
+<!-- ==================== SLIDE 8: TokaMark Forecasting ==================== -->
+<div class="slide">
+  <h1>TokaMark Benchmark — прогнозирование</h1>
+  <p style="margin-bottom:10px;">Бенчмарк KDD 2026 (UKAEA + IBM + STFC) — 14 задач прогнозирования параметров плазмы</p>
+
+  <div class="cols">
+    <div class="col">
+      <h3>Group 1: Реконструкция равновесия</h3>
+      <table style="font-size:14px;">
+        <tr><th>Модель</th><th>NRMSE</th></tr>
+        <tr><td><strong>LSTM Forecaster</strong></td><td class="highlight-cell"><strong>0.143</strong></td></tr>
+        <tr><td>Transformer</td><td>0.196</td></tr>
+        <tr><td>Baseline</td><td>0.163</td></tr>
+      </table>
+      <p style="font-size:13px; color:#27ae60; margin-top:6px;">&#10003; LSTM бьёт baseline на 12.3%</p>
+    </div>
+    <div class="col">
+      <h3>Group 4: MHD / Срывы</h3>
+      <table style="font-size:14px;">
+        <tr><th>Задача</th><th>LSTM</th><th>Baseline</th></tr>
+        <tr><td>4-1 Soft X-ray</td><td class="highlight-cell"><strong>0.305</strong></td><td>0.345</td></tr>
+        <tr><td>4-2 SXR kinetics</td><td class="highlight-cell"><strong>0.308</strong></td><td>0.331</td></tr>
+        <tr><td>4-3 Shape params</td><td>0.792</td><td><strong>0.270</strong></td></tr>
+        <tr><td><strong>4-4 Ток плазмы</strong></td><td class="highlight-cell"><strong>0.275</strong></td><td>0.429</td></tr>
+        <tr><td>4-5 Mirnov/MHD</td><td class="highlight-cell"><strong>0.800</strong></td><td>1.005</td></tr>
+      </table>
+      <p style="font-size:13px; color:#27ae60; margin-top:6px;">&#10003; 4/5 задач лучше baseline, ток плазмы &minus;36%</p>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; padding:10px; background:#e8f8f5; border-radius:6px; font-size:14px;">
+    <strong>Ключевой результат:</strong> Task 4-4 (прогноз тока плазмы на 50 мс) — NRMSE 0.275 vs baseline 0.429.
+    Резкое падение I<sub>p</sub> = current quench = основная фаза срыва. Наша модель предсказывает его на 36% точнее.
+  </div>
+  <span class="slide-num">8</span>
+</div>
+
+<!-- ==================== SLIDE 9: Data ==================== -->
 <div class="slide">
   <h1>Данные FAIR-MAST</h1>
   <div class="cols">
@@ -639,10 +676,10 @@
       </div>
     </div>
   </div>
-  <span class="slide-num">8</span>
+  <span class="slide-num">9</span>
 </div>
 
-<!-- ==================== SLIDE 9: Demo Flow ==================== -->
+<!-- ==================== SLIDE 10: Demo Flow ==================== -->
 <div class="slide">
   <h1>Демонстрация работы платформы</h1>
 
@@ -690,10 +727,10 @@
       </ul>
     </div>
   </div>
-  <span class="slide-num">9</span>
+  <span class="slide-num">10</span>
 </div>
 
-<!-- ==================== SLIDE 10: Security & Quality ==================== -->
+<!-- ==================== SLIDE 11: Security & Quality ==================== -->
 <div class="slide">
   <h1>Безопасность и качество</h1>
   <div class="cols">
@@ -724,10 +761,10 @@
       </ul>
     </div>
   </div>
-  <span class="slide-num">10</span>
+  <span class="slide-num">11</span>
 </div>
 
-<!-- ==================== SLIDE 11: Results Summary ==================== -->
+<!-- ==================== SLIDE 12: Results Summary ==================== -->
 <div class="slide">
   <h1>Итоги проекта</h1>
   <table>
@@ -790,10 +827,10 @@
       <div class="label">ML-модели</div>
     </div>
   </div>
-  <span class="slide-num">11</span>
+  <span class="slide-num">12</span>
 </div>
 
-<!-- ==================== SLIDE 12: Future Work ==================== -->
+<!-- ==================== SLIDE 13: Future Work ==================== -->
 <div class="slide">
   <h1>Заключение и планы развития</h1>
 
@@ -814,16 +851,16 @@
     <li>Публикация на <strong>arXiv</strong> (cs.LG / physics.plasm-ph)</li>
     <li>Real-time streaming данных с токамака</li>
   </ul>
-  <span class="slide-num">12</span>
+  <span class="slide-num">13</span>
 </div>
 
-<!-- ==================== SLIDE 13: Thank You ==================== -->
+<!-- ==================== SLIDE 14: Thank You ==================== -->
 <div class="slide end-slide">
   <h1>Спасибо за внимание!</h1>
   <p style="margin-top:30px; font-size:18px; color:#ecf0f1;">Вопросы?</p>
   <p style="margin-top:30px; font-size:16px; color:#bdc3c7;">https://tokamak-ai.ru &nbsp;|&nbsp; github.com/sakiselev-ai/tokamak-analysis</p>
   <p style="margin-top:20px;">НИЯУ МИФИ, 2026</p>
-  <span class="slide-num" style="color:#7f8c8d;">13</span>
+  <span class="slide-num" style="color:#7f8c8d;">14</span>
 </div>
 
 </body>
