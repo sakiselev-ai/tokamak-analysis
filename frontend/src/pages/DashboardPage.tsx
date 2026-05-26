@@ -14,7 +14,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     api
-      .get('/experiments/?limit=50')
+      .get('/experiments/?limit=200')
       .then((res) => {
         setExperiments(res.data.experiments);
         setTotalExperiments(res.data.total ?? res.data.experiments.length);
