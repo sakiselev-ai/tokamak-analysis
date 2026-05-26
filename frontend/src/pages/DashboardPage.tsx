@@ -7,14 +7,18 @@ import type { Experiment, MLModel } from '../types';
 
 export default function DashboardPage() {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [totalExperiments, setTotalExperiments] = useState(0);
   const [models, setModels] = useState<MLModel[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     api
-      .get('/experiments/')
-      .then((res) => setExperiments(res.data.experiments))
+      .get('/experiments/?limit=50')
+      .then((res) => {
+        setExperiments(res.data.experiments);
+        setTotalExperiments(res.data.total ?? res.data.experiments.length);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
 
@@ -54,7 +58,7 @@ export default function DashboardPage() {
         <div className="stat-card">
           <div className="stat-icon stat-icon-primary">{'\u26A1'}</div>
           <div>
-            <div className="stat-value">{experiments.length}</div>
+            <div className="stat-value">{totalExperiments}</div>
             <div className="stat-label">Экспериментов</div>
           </div>
         </div>
